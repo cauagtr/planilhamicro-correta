@@ -541,7 +541,7 @@ async function processarPlanilhas() {
     setProgresso(55, `Salvando ${propostas.length} propostas...`)
     let salvas = 0
     for (const p of propostas) {
-      await sb('propostas?on_conflict=cnpj', {
+      await sb('propostas?on_conflict=cnpj,etapa', {
         method: 'POST',
         prefer: 'resolution=merge-duplicates',
         body: p
