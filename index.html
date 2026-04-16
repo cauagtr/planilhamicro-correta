@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Fomento Paraná — Sistema de Microcrédito</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --azul: #003366;
+    --azul-medio: #004080;
+    --dourado: #F5C400;
+    --dourado-escuro: #c49a00;
+    --bg: #f0f2f5;
+    --bg-card: #ffffff;
+    --border: #d0d5dd;
+    --text: #1a1a2e;
+    --text-muted: #6b7280;
+    --success: #166534;
+    --success-bg: #dcfce7;
+    --danger: #991b1b;
+    --danger-bg: #fee2e2;
+    --warn: #92400e;
+    --warn-bg: #fef3c7;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+
+  /* HEADER */
+  header { background: var(--azul); color: #fff; padding: 0 24px; display: flex; align-items: center; gap: 16px; height: 64px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); position: sticky; top: 0; z-index: 100; }
+  .header-brasao { background: var(--dourado); color: var(--azul); font-weight: 700; font-size: 13px; width: 40px; height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; letter-spacing: 0.5px; }
+  .header-divider { width: 1px; height: 36px; background: rgba(255,255,255,0.2); }
+  .header-info h1 { font-size: 15px; font-weight: 600; letter-spacing: 0.3px; }
+  .header-info span { font-size: 12px; color: rgba(255,255,255,0.65); }
+  .header-badge { margin-left: auto; background: var(--dourado); color: var(--azul); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px; }
+
+  /* TABS */
+  nav { background: var(--azul-medio); display: flex; gap: 2px; padding: 0 20px; }
+  .tab-btn { background: transparent; border: none; color: rgba(255,255,255,0.65); padding: 14px 20px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; border-bottom: 3px solid transparent; transition: all .15s; }
+  .tab-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
+  .tab-btn.active { color: var(--dourado); border-bottom-color: var(--dourado); }
+
+  /* CONTAINER */
+  main { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
+
+  /* CARDS */
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+  .card + .card { margin-top: 16px; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--azul); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+  /* FORMS */
+  label { font-size: 13px; font-weight: 500; color: var(--text); display: block; margin-bottom: 6px; }
+  .input-file-area { border: 2px dashed var(--border); border-radius: var(--radius); padding: 20px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; background: #fafafa; }
+  .input-file-area:hover, .input-file-area.over { border-color: var(--azul); background: #eef2ff; }
+  .input-file-area.has-file { border-color: #16a34a; background: #f0fdf4; border-style: solid; }
+  .input-file-area input[type=file] { display: none; }
+  .file-icon { font-size: 28px; margin-bottom: 8px; }
+  .file-label-main { font-size: 13px; font-weight: 500; }
+  .file-label-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .file-name { font-size: 13px; color: #16a34a; font-weight: 600; margin-top: 6px; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: var(--radius); border: none; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; text-decoration: none; }
+  .btn-primary { background: var(--azul); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--azul-medio); }
+  .btn-primary:disabled { background: #9ca3af; cursor: not-allowed; }
+  .btn-secondary { background: transparent; color: var(--azul); border: 1px solid var(--azul); }
+  .btn-secondary:hover { background: #eef2ff; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid #fca5a5; }
+  .btn-danger:hover { background: #fecaca; }
+
+  /* ALERTS */
+  .alert { padding: 12px 16px; border-radius: var(--radius); font-size: 13px; display: flex; align-items: flex-start; gap: 10px; }
+  .alert-info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  .alert-success { background: var(--success-bg); color: var(--success); border: 1px solid #86efac; }
+  .alert-warn { background: var(--warn-bg); color: var(--warn); border: 1px solid #fde68a; }
+  .alert-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid #fca5a5; }
+
+  /* PROGRESS */
+  .progress-bar { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin: 8px 0; }
+  .progress-fill { height: 100%; background: var(--azul); border-radius: 3px; transition: width .3s; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { background: #f8fafc; color: var(--azul); font-weight: 600; padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; position: sticky; top: 0; }
+  thead th:hover { background: #eef2ff; }
+  thead th .sort-icon { opacity: .4; margin-left: 4px; font-size: 11px; }
+  thead th.sorted .sort-icon { opacity: 1; color: var(--dourado-escuro); }
+  tbody tr { transition: filter .1s; }
+  tbody tr:hover { filter: brightness(0.96); }
+  tbody td { padding: 9px 12px; border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .td-cnpj { font-family: 'IBM Plex Mono', monospace; font-size: 12px; white-space: nowrap; }
+  .td-valor { font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-align: right; }
+  .td-etapa .etapa-badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+  .etapa-concedido { background: #dcfce7; color: #166534; }
+  .etapa-excluido, .etapa-excluído { background: #fee2e2; color: #991b1b; }
+  .etapa-recusado { background: #fef3c7; color: #92400e; }
+  .etapa-default { background: #f0f9ff; color: #0369a1; }
+
+  /* RESPONSAVEL */
+  .resp-select { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 600; border: none; border-radius: 4px; padding: 3px 6px; cursor: pointer; background: transparent; width: 100%; }
+  .resp-badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 4px; }
+
+  /* FILTROS */
+  .filtros-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+  .filtro-btn { padding: 5px 14px; border-radius: 20px; border: 2px solid transparent; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .filtro-btn.active { border-color: var(--azul) !important; }
+  .search-input { padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-family: inherit; font-size: 13px; min-width: 220px; }
+  .search-input:focus { outline: none; border-color: var(--azul); }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal-box { background: #fff; border-radius: 12px; padding: 24px; width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+  .modal-title { font-size: 15px; font-weight: 600; color: var(--azul); margin-bottom: 16px; }
+  .modal-info { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  textarea { width: 100%; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; resize: vertical; min-height: 100px; }
+  textarea:focus { outline: none; border-color: var(--azul); }
+  .obs-antiga { background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; font-size: 12px; color: var(--text-muted); margin-bottom: 12px; max-height: 80px; overflow-y: auto; }
+
+  /* HISTÓRICO */
+  .hist-item { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-icon { width: 36px; height: 36px; background: #eff6ff; color: var(--azul); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .hist-info { flex: 1; }
+  .hist-data { font-size: 13px; font-weight: 600; }
+  .hist-detalhe { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .hist-badge { font-size: 12px; background: #eff6ff; color: var(--azul); padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .stat-label { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 22px; font-weight: 600; color: var(--azul); margin-top: 4px; }
+  .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* GRID UPLOAD */
+  .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .upload-grid { grid-template-columns: 1fr; } header { padding: 0 12px; } .tab-btn { padding: 12px 14px; font-size: 12px; } }
+
+  /* RESPONSAVEL COLOR */
+  select.resp-select option { background: #fff; color: #000; }
+
+  /* SPINNER */
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; }
+
+  /* RESPONSAVEL CHIP */
+  .resp-chip { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-brasao">PR</div>
+  <div class="header-divider"></div>
+  <div class="header-info">
+    <h1>FOMENTO PARANÁ — Sistema de Microcrédito</h1>
+    <span>Processamento Automatizado de Propostas</span>
+  </div>
+  <span class="header-badge">v3.0</span>
+</header>
+
+<nav>
+  <button class="tab-btn active" onclick="setTab('processar')" id="tab-processar">⚙ Processar</button>
+  <button class="tab-btn" onclick="setTab('propostas')" id="tab-propostas">📋 Propostas</button>
+  <button class="tab-btn" onclick="setTab('historico')" id="tab-historico">🕒 Histórico</button>
+</nav>
+
+<main id="main-content">
+  <div id="view-processar"></div>
+  <div id="view-propostas" style="display:none"></div>
+  <div id="view-historico" style="display:none"></div>
+</main>
+
+<!-- MODAL OBSERVAÇÃO -->
+<div class="modal-overlay" id="modal-obs" style="display:none" onclick="fecharModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modal-title">Observação</div>
+    <div class="modal-info" id="modal-info"></div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Observação anterior</label>
+      <div class="obs-antiga" id="modal-obs-antiga">—</div>
+    </div>
+    <label style="margin-bottom:6px">Nova observação</label>
+    <textarea id="modal-textarea" rows="4" placeholder="Digite a observação..."></textarea>
+    <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarObservacao()" id="btn-salvar-obs">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURAÇÃO SUPABASE
+// ============================================================
+const SUPABASE_URL = 'https://byvqsjhslfdblmiymksf.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5dnFzamhzbGZkYmxtaXlta3NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTI1OTIsImV4cCI6MjA5MTg4ODU5Mn0.DcwRiV_CePS4KmOG9I7SmqMl83pLQthNvNYQClLdL_4'
+
+async function sb(path, opts={}) {
+  const url = `${SUPABASE_URL}/rest/v1/${path}`
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': opts.prefer || '',
+    ...(opts.headers || {})
+  }
+  const res = await fetch(url, { method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined })
+  if (!res.ok) {
+    const txt = await res.text()
+    throw new Error(`Supabase ${res.status}: ${txt}`)
+  }
+  const ct = res.headers.get('content-type') || ''
+  if (ct.includes('json') && res.status !== 204) return res.json()
+  return null
+}
+
+// ============================================================
+// COLABORADORES
+// ============================================================
+const COLABORADORES = {
+  ANDRESSA: '#E06C75',
+  ANNA:     '#C9A0DC',
+  'CAUÃ':   '#F4A460',
+  CONRADO:  '#E88080',
+  JULIANO:  '#93C47D',
+  LETICIA:  '#EA9999',
+  MARCOS:   '#6FA8DC',
+  PEDRO:    '#9FC5E8',
+  RAIANE:   '#D5A6E6',
+  'VALÉRIO':'#FFFFFF',
+  'N/A':    '#E0E0E0',
+}
+const COLAB_LIST = Object.keys(COLABORADORES)
+
+function getCorColab(nome) {
+  if (!nome || nome === 'N/A') return COLABORADORES['N/A']
+  const up = nome.toUpperCase().trim()
+  for (const k of Object.keys(COLABORADORES)) {
+    if (k === 'N/A') continue
+    if (up === k || up === k.normalize('NFD').replace(/[\u0300-\u036f]/g,'')) return COLABORADORES[k]
+  }
+  return COLABORADORES['N/A']
+}
+
+function getLuminance(hex) {
+  const c = hex.replace('#','')
+  const r = parseInt(c.substr(0,2),16)/255
+  const g = parseInt(c.substr(2,2),16)/255
+  const b = parseInt(c.substr(4,2),16)/255
+  const toL = x => x<=0.03928 ? x/12.92 : Math.pow((x+0.055)/1.055,2.4)
+  return 0.2126*toL(r)+0.7152*toL(g)+0.0722*toL(b)
+}
+
+function getTextColor(bg) {
+  return getLuminance(bg) > 0.55 ? '#1a1a2e' : '#fff'
+}
+
+// ============================================================
+// UTILITÁRIOS
+// ============================================================
+function normCNPJ(v) { return v ? String(v).replace(/\D/g,'') : '' }
+
+function formatCNPJ(v) {
+  const d = normCNPJ(v)
+  if (d.length === 14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5')
+  if (d.length === 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4')
+  return v
+}
+
+function formatValor(v) {
+  if (v === null || v === undefined || v === '') return '—'
+  const n = typeof v === 'number' ? v : parseFloat(String(v).replace(/\./g,'').replace(',','.'))
+  if (isNaN(n)) return String(v)
+  return n.toLocaleString('pt-BR', { style:'currency', currency:'BRL', minimumFractionDigits:2 })
+}
+
+function formatData(v) {
+  if (!v) return '—'
+  if (typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}/)) {
+    const [y,m,d] = v.split('T')[0].split('-')
+    return `${d}/${m}/${y}`
+  }
+  return v
+}
+
+function parseData(val) {
+  if (!val) return null
+  if (val instanceof Date) return val
+  const s = String(val).trim()
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/)
+  if (m) { const [,d,mo,y] = m; const yr = y.length===2?`20${y}`:y; return new Date(`${yr}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`) }
+  const d = new Date(s); if (!isNaN(d.getTime())) return d
+  return null
+}
+
+function parseValor(v) {
+  if (v === null || v === undefined || v === '') return null
+  if (typeof v === 'number') return v
+  const s = String(v).trim().replace(/R\$\s?/g,'').replace(/\s/g,'')
+  if (s.match(/^\d{1,3}(\.\d{3})*(,\d{1,2})?$/)) return parseFloat(s.replace(/\./g,'').replace(',','.'))
+  return parseFloat(s.replace(',','.')) || null
+}
+
+function getCol(row, ...names) {
+  for (const n of names) {
+    if (row[n] !== undefined && row[n] !== null && row[n] !== '') return row[n]
+    const k = Object.keys(row).find(kk => kk.trim().toLowerCase() === n.toLowerCase())
+    if (k !== undefined && row[k] !== undefined && row[k] !== null && row[k] !== '') return row[k]
+  }
+  return ''
+}
+
+function etapaBadge(etapa) {
+  const e = (etapa||'').toLowerCase().trim()
+  let cls = 'etapa-default'
+  if (e === 'concedido') cls = 'etapa-concedido'
+  else if (e === 'excluído' || e === 'excluido') cls = 'etapa-excluido'
+  else if (e === 'recusado') cls = 'etapa-recusado'
+  return `<span class="etapa-badge ${cls}">${etapa||'—'}</span>`
+}
+
+function showToast(msg, type='success') {
+  const t = document.createElement('div')
+  t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.2);transition:opacity .3s;`
+  if (type==='success') t.style.cssText += 'background:#166534;color:#fff;'
+  else if (type==='error') t.style.cssText += 'background:#991b1b;color:#fff;'
+  else t.style.cssText += 'background:#1e40af;color:#fff;'
+  t.textContent = msg
+  document.body.appendChild(t)
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),300) }, 2800)
+}
+
+// ============================================================
+// NAVEGAÇÃO
+// ============================================================
+let tabAtual = 'processar'
+function setTab(tab) {
+  tabAtual = tab
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+  document.getElementById(`tab-${tab}`).classList.add('active')
+  document.getElementById('view-processar').style.display = tab==='processar' ? '' : 'none'
+  document.getElementById('view-propostas').style.display = tab==='propostas' ? '' : 'none'
+  document.getElementById('view-historico').style.display = tab==='historico' ? '' : 'none'
+  if (tab === 'propostas') carregarPropostas()
+  if (tab === 'historico') carregarHistorico()
+}
+
+// ============================================================
+// ABA PROCESSAR
+// ============================================================
+let arquivoAndamento = null
+let arquivoFinalizados = null
+
+function renderProcessar() {
+  document.getElementById('view-processar').innerHTML = `
+  <div class="card">
+    <div class="card-title">📂 Upload das Planilhas</div>
+    <div class="upload-grid">
+      <div>
+        <label>Projetos em Andamento</label>
+        <div class="input-file-area" id="drop-andamento" onclick="document.getElementById('file-andamento').click()"
+          ondragover="event.preventDefault();this.classList.add('over')"
+          ondragleave="this.classList.remove('over')"
+          ondrop="handleDrop(event,'andamento')">
+          <input type="file" id="file-andamento" accept=".xlsx,.xls,.csv" onchange="handleFile(event,'andamento')"/>
+          <div class="file-icon">📊</div>
+          <div class="file-label-main">Clique ou arraste o arquivo</div>
+          <div class="file-label-sub">.xlsx, .xls ou .csv</div>
+          <div class="file-name" id="nome-andamento"></div>
+        </div>
+      </div>
+      <div>
+        <label>Projetos Finalizados</label>
+        <div class="input-file-area" id="drop-finalizados" onclick="document.getElementById('file-finalizados').click()"
+          ondragover="event.preventDefault();this.classList.add('over')"
+          ondragleave="this.classList.remove('over')"
+          ondrop="handleDrop(event,'finalizados')">
+          <input type="file" id="file-finalizados" accept=".xlsx,.xls,.csv" onchange="handleFile(event,'finalizados')"/>
+          <div class="file-icon">📋</div>
+          <div class="file-label-main">Clique ou arraste o arquivo</div>
+          <div class="file-label-sub">.xlsx, .xls ou .csv</div>
+          <div class="file-name" id="nome-finalizados"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">⚙ Processamento</div>
+    <div id="proc-status" class="alert alert-info" style="margin-bottom:16px">
+      ℹ Faça upload das duas planilhas para iniciar o processamento.
+    </div>
+    <div id="proc-progress" style="display:none">
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:4px" id="proc-progress-label">Aguardando...</div>
+      <div class="progress-bar"><div class="progress-fill" id="proc-progress-fill" style="width:0%"></div></div>
+    </div>
+    <button class="btn btn-primary" id="btn-processar" onclick="processarPlanilhas()" disabled>
+      ⚡ Gerar Planilha de Hoje
+    </button>
+  </div>
+
+  <div class="card" id="card-resultado" style="display:none;margin-top:16px">
+    <div class="card-title">✅ Resultado do Processamento</div>
+    <div id="resultado-content"></div>
+  </div>`
+}
+
+function handleDrop(e, tipo) {
+  e.preventDefault()
+  document.getElementById(`drop-${tipo}`).classList.remove('over')
+  const file = e.dataTransfer.files[0]
+  if (file) processarArquivo(file, tipo)
+}
+
+function handleFile(e, tipo) {
+  const file = e.target.files[0]
+  if (file) processarArquivo(file, tipo)
+}
+
+function processarArquivo(file, tipo) {
+  if (tipo === 'andamento') arquivoAndamento = file
+  else arquivoFinalizados = file
+  const nome = document.getElementById(`nome-${tipo}`)
+  nome.textContent = '✔ ' + file.name
+  document.getElementById(`drop-${tipo}`).classList.add('has-file')
+  if (arquivoAndamento && arquivoFinalizados) {
+    document.getElementById('btn-processar').disabled = false
+    document.getElementById('proc-status').className = 'alert alert-success'
+    document.getElementById('proc-status').textContent = '✅ Arquivos prontos. Clique em "Gerar Planilha de Hoje" para processar.'
+  }
+}
+
+function lerPlanilha(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader()
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type:'binary', cellDates:true })
+        const ws = wb.Sheets[wb.SheetNames[0]]
+        const rows = XLSX.utils.sheet_to_json(ws, { defval:'' })
+        res(rows)
+      } catch(err) { rej(err) }
+    }
+    reader.onerror = rej
+    reader.readAsBinaryString(file)
+  })
+}
+
+function transformar(rows) {
+  return rows.map(row => ({
+    cnpj: normCNPJ(getCol(row,'CPF/CNPJ','CNPJ','CPF')),
+    razaoSocial: getCol(row,'Nome do Cliente','Razão Social','Razao Social'),
+    etapa: getCol(row,'Etapa'),
+    valor: getCol(row,'Valor Solicitado','Valor'),
+    email: getCol(row,'Email','E-mail'),
+    naEtapaDe: parseData(getCol(row,'Na Etapa Desde','Na Etapa De')),
+  }))
+}
+
+function filtrarFinalizados(rows) {
+  const validas = ['concedido','excluído','excluido','recusado']
+  return rows.filter(r => validas.includes(String(r.etapa||'').toLowerCase().trim()))
+}
+
+function deduplicar(rows) {
+  const visto = new Set()
+  return rows.filter(r => {
+    const k = `${r.cnpj}|${String(r.etapa).toLowerCase()}`
+    if (visto.has(k)) return false
+    visto.add(k); return true
+  })
+}
+
+function aplicarVlookup(rows, ref) {
+  return rows.map(row => {
+    const r = ref.find(x => normCNPJ(x.cnpj) === normCNPJ(row.cnpj))
+    const resp = r && r.responsavel_final && r.responsavel_final !== 'N/A' ? r.responsavel_final : 'N/A'
+    return {
+      ...row,
+      observacoesAnteriores: r ? (r.observacao || '') : '',
+      responsavel: resp,
+      responsavelFinal: resp,
+    }
+  })
+}
+
+function setProgresso(pct, label) {
+  document.getElementById('proc-progress').style.display = ''
+  document.getElementById('proc-progress-fill').style.width = pct + '%'
+  document.getElementById('proc-progress-label').textContent = label
+}
+
+async function processarPlanilhas() {
+  const btn = document.getElementById('btn-processar')
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span> Processando...'
+  document.getElementById('proc-status').className = 'alert alert-info'
+  document.getElementById('proc-status').textContent = '⏳ Processando planilhas...'
+  document.getElementById('card-resultado').style.display = 'none'
+
+  try {
+    setProgresso(10, 'Lendo planilhas...')
+    const [rowsAnd, rowsFin] = await Promise.all([lerPlanilha(arquivoAndamento), lerPlanilha(arquivoFinalizados)])
+
+    setProgresso(25, 'Buscando referência no Supabase...')
+    const refs = await sb('planilha_referencia?select=dados&order=criado_em.desc&limit=1')
+    const referencia = (refs && refs[0] && refs[0].dados) ? refs[0].dados : []
+
+    setProgresso(40, 'Processando dados...')
+    let and = transformar(rowsAnd)
+    let fin = transformar(rowsFin)
+    fin = filtrarFinalizados(fin)
+    const merged = deduplicar([...and, ...fin])
+    const comVlookup = aplicarVlookup(merged, referencia)
+
+    const propostas = comVlookup.map(r => ({
+      responsavel: r.responsavel || 'N/A',
+      cnpj: r.cnpj,
+      razao_social: r.razaoSocial,
+      etapa: r.etapa,
+      valor: parseValor(r.valor),
+      email: r.email,
+      na_etapa_desde: r.naEtapaDe ? r.naEtapaDe.toISOString().split('T')[0] : null,
+      observacoes_anteriores: r.observacoesAnteriores || '',
+      observacao: '',
+      responsavel_final: r.responsavelFinal || 'N/A',
+    }))
+
+    setProgresso(55, `Salvando ${propostas.length} propostas...`)
+    let salvas = 0
+    for (const p of propostas) {
+      await sb('propostas?on_conflict=cnpj', {
+        method: 'POST',
+        prefer: 'resolution=merge-duplicates',
+        body: p
+      })
+      salvas++
+      if (salvas % 10 === 0) setProgresso(55 + Math.round((salvas/propostas.length)*30), `Salvando... ${salvas}/${propostas.length}`)
+    }
+
+    setProgresso(88, 'Salvando histórico...')
+    await sb('historico_processamentos', {
+      method: 'POST',
+      prefer: 'return=minimal',
+      body: {
+        arquivos_enviados: [arquivoAndamento.name, arquivoFinalizados.name],
+        total_propostas: propostas.length
+      }
+    })
+
+    setProgresso(94, 'Salvando referência para amanhã...')
+    const novaRef = propostas.map(p => ({
+      cnpj: p.cnpj,
+      observacao: p.observacao,
+      responsavel_final: p.responsavel_final
+    }))
+    await sb('planilha_referencia', {
+      method: 'POST',
+      prefer: 'return=minimal',
+      body: { dados: novaRef }
+    })
+
+    setProgresso(100, 'Concluído!')
+    document.getElementById('proc-status').className = 'alert alert-success'
+    document.getElementById('proc-status').textContent = `✅ Processamento concluído! ${propostas.length} propostas salvas.`
+
+    const naAtrib = propostas.filter(p => p.responsavel === 'N/A').length
+    const comResp = propostas.filter(p => p.responsavel !== 'N/A').length
+    document.getElementById('card-resultado').style.display = ''
+    document.getElementById('resultado-content').innerHTML = `
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${propostas.length}</div><div class="stat-sub">propostas</div></div>
+        <div class="stat-card"><div class="stat-label">Com Responsável</div><div class="stat-value" style="color:#166534">${comResp}</div></div>
+        <div class="stat-card"><div class="stat-label">Sem Atribuir</div><div class="stat-value" style="color:${naAtrib>0?'#92400e':'#166534'}">${naAtrib}</div></div>
+        <div class="stat-card"><div class="stat-label">Andamento</div><div class="stat-value">${and.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Finalizados</div><div class="stat-value">${fin.length}</div></div>
+      </div>
+      <button class="btn btn-primary" onclick="setTab('propostas');carregarPropostas()">Ver Propostas →</button>`
+
+    showToast(`${propostas.length} propostas processadas com sucesso!`)
+
+  } catch(err) {
+    console.error(err)
+    document.getElementById('proc-status').className = 'alert alert-danger'
+    document.getElementById('proc-status').textContent = '❌ Erro: ' + err.message
+    showToast('Erro no processamento: ' + err.message, 'error')
+  } finally {
+    btn.disabled = false
+    btn.innerHTML = '⚡ Gerar Planilha de Hoje'
+  }
+}
+
+// ============================================================
+// ABA PROPOSTAS
+// ============================================================
+let todasPropostas = []
+let filtroColab = 'TODOS'
+let filtroSearch = ''
+let sortCol = 'razao_social'
+let sortDir = 1
+let modalCNPJ = null
+
+function renderPropostas() {
+  document.getElementById('view-propostas').innerHTML = `
+  <div class="card">
+    <div class="card-title">📋 Propostas</div>
+    <div id="stats-propostas" class="stats-grid" style="margin-bottom:16px"></div>
+    <div class="filtros-row">
+      <button class="filtro-btn active" id="filtro-TODOS" style="background:#003366;color:#fff;border-color:#003366" onclick="setFiltroColab('TODOS')">Todos</button>
+      ${COLAB_LIST.map(c => {
+        const bg = COLABORADORES[c]
+        const fg = getTextColor(bg)
+        return `<button class="filtro-btn" id="filtro-${c}" style="background:${bg};color:${fg};border-color:${bg}" onclick="setFiltroColab('${c}')">${c}</button>`
+      }).join('')}
+    </div>
+    <div class="filtros-row">
+      <input type="text" class="search-input" placeholder="🔍 Buscar por nome, CNPJ ou etapa..." oninput="setSearch(this.value)" value="${filtroSearch}"/>
+      <button class="btn btn-secondary btn-sm" onclick="carregarPropostas()">↺ Atualizar</button>
+    </div>
+    <div id="tabela-propostas">
+      <div class="empty"><div class="empty-icon">⏳</div><p>Carregando propostas...</p></div>
+    </div>
+  </div>`
+}
+
+async function carregarPropostas() {
+  try {
+    const data = await sb('propostas?select=*&order=razao_social.asc&limit=2000')
+    todasPropostas = data || []
+    renderTabelaPropostas()
+    renderStatsPropostas()
+  } catch(e) {
+    document.getElementById('tabela-propostas').innerHTML = `<div class="alert alert-danger">❌ Erro ao carregar: ${e.message}</div>`
+  }
+}
+
+function renderStatsPropostas() {
+  const el = document.getElementById('stats-propostas')
+  if (!el) return
+  const total = todasPropostas.length
+  const naAtrib = todasPropostas.filter(p => !p.responsavel || p.responsavel === 'N/A').length
+  const totalValor = todasPropostas.reduce((s,p) => s + (p.valor || 0), 0)
+  el.innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${total}</div></div>
+    <div class="stat-card"><div class="stat-label">Sem Atribuir</div><div class="stat-value" style="color:${naAtrib>0?'#92400e':'#166534'}">${naAtrib}</div></div>
+    <div class="stat-card"><div class="stat-label">Valor Total</div><div class="stat-value" style="font-size:15px">${formatValor(totalValor)}</div></div>`
+}
+
+function setFiltroColab(c) {
+  filtroColab = c
+  document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'))
+  document.getElementById(`filtro-${c}`)?.classList.add('active')
+  renderTabelaPropostas()
+}
+
+function setSearch(v) { filtroSearch = v; renderTabelaPropostas() }
+
+function setSort(col) {
+  if (sortCol === col) sortDir *= -1
+  else { sortCol = col; sortDir = 1 }
+  renderTabelaPropostas()
+}
+
+function renderTabelaPropostas() {
+  let rows = [...todasPropostas]
+  if (filtroColab !== 'TODOS') rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === filtroColab)
+  if (filtroSearch.trim()) {
+    const q = filtroSearch.toLowerCase()
+    rows = rows.filter(p =>
+      (p.razao_social||'').toLowerCase().includes(q) ||
+      (p.cnpj||'').includes(q) ||
+      (p.etapa||'').toLowerCase().includes(q)
+    )
+  }
+  rows.sort((a,b) => {
+    let va = a[sortCol] ?? '', vb = b[sortCol] ?? ''
+    if (typeof va === 'number' && typeof vb === 'number') return (va-vb)*sortDir
+    return String(va).localeCompare(String(vb), 'pt-BR') * sortDir
+  })
+
+  const cols = [
+    {key:'responsavel', label:'Responsável'},
+    {key:'razao_social', label:'Razão Social'},
+    {key:'cnpj', label:'CNPJ'},
+    {key:'etapa', label:'Etapa'},
+    {key:'valor', label:'Valor', align:'right'},
+    {key:'na_etapa_desde', label:'Na Etapa Desde'},
+    {key:'observacao', label:'Observação'},
+  ]
+
+  if (!rows.length) {
+    document.getElementById('tabela-propostas').innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><p>Nenhuma proposta encontrada.</p></div>`
+    return
+  }
+
+  const th = cols.map(c => {
+    const isSorted = sortCol === c.key
+    const icon = isSorted ? (sortDir===1?'↑':'↓') : '↕'
+    return `<th class="${isSorted?'sorted':''}" onclick="setSort('${c.key}')" style="${c.align?'text-align:'+c.align:''}">
+      ${c.label} <span class="sort-icon">${icon}</span>
+    </th>`
+  }).join('')
+
+  const trs = rows.map(p => {
+    const resp = p.responsavel || 'N/A'
+    const bg = getCorColab(resp)
+    const fg = getTextColor(bg)
+    const respCell = resp === 'N/A'
+      ? `<td><select class="resp-select" style="background:${bg};color:${fg}" onchange="atribuirResponsavel('${p.cnpj}',this.value,this)" data-cnpj="${p.cnpj}">
+           <option value="">— Atribuir —</option>
+           ${COLAB_LIST.filter(c=>c!=='N/A').map(c=>`<option value="${c}">${c}</option>`).join('')}
+         </select></td>`
+      : `<td><span class="resp-chip" style="background:${bg};color:${fg}">${resp}</span></td>`
+
+    const obs = p.observacao || ''
+    const obsCell = `<td><button class="btn btn-secondary btn-sm" onclick="abrirModal('${p.cnpj}','${(p.razao_social||'').replace(/'/g,"\\'")}','${(obs).replace(/'/g,"\\'")}','${(p.observacoes_anteriores||'').replace(/'/g,"\\'")}')">
+      ${obs ? '✏ Ver/Editar' : '+ Adicionar'}
+    </button></td>`
+
+    return `<tr style="background:${bg};color:${fg}" data-cnpj="${p.cnpj}">
+      ${respCell}
+      <td style="font-weight:500">${p.razao_social||'—'}</td>
+      <td class="td-cnpj">${formatCNPJ(p.cnpj)}</td>
+      <td class="td-etapa">${etapaBadge(p.etapa)}</td>
+      <td class="td-valor" style="color:${fg}">${formatValor(p.valor)}</td>
+      <td>${formatData(p.na_etapa_desde)}</td>
+      ${obsCell}
+    </tr>`
+  }).join('')
+
+  document.getElementById('tabela-propostas').innerHTML = `
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${rows.length} proposta${rows.length!==1?'s':''} encontrada${rows.length!==1?'s':''}</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>${th}</tr></thead>
+        <tbody>${trs}</tbody>
+      </table>
+    </div>`
+}
+
+async function atribuirResponsavel(cnpj, resp, selectEl) {
+  if (!resp) return
+  try {
+    await sb(`propostas?cnpj=eq.${cnpj}`, {
+      method: 'PATCH',
+      prefer: 'return=minimal',
+      body: { responsavel: resp, responsavel_final: resp }
+    })
+    const idx = todasPropostas.findIndex(p => p.cnpj === cnpj)
+    if (idx !== -1) { todasPropostas[idx].responsavel = resp; todasPropostas[idx].responsavel_final = resp }
+    showToast(`${resp} atribuído com sucesso!`)
+    renderTabelaPropostas()
+    renderStatsPropostas()
+  } catch(e) {
+    showToast('Erro ao atribuir: ' + e.message, 'error')
+  }
+}
+
+// ============================================================
+// MODAL OBSERVAÇÃO
+// ============================================================
+function abrirModal(cnpj, nome, obs, obsAntiga) {
+  modalCNPJ = cnpj
+  document.getElementById('modal-title').textContent = nome || 'Observação'
+  document.getElementById('modal-info').textContent = `CNPJ: ${formatCNPJ(cnpj)}`
+  document.getElementById('modal-obs-antiga').textContent = obsAntiga || '—'
+  document.getElementById('modal-textarea').value = obs || ''
+  document.getElementById('modal-obs').style.display = 'flex'
+}
+
+function fecharModal(e) {
+  if (e && e.target !== document.getElementById('modal-obs')) return
+  document.getElementById('modal-obs').style.display = 'none'
+  modalCNPJ = null
+}
+
+async function salvarObservacao() {
+  if (!modalCNPJ) return
+  const obs = document.getElementById('modal-textarea').value.trim()
+  const btn = document.getElementById('btn-salvar-obs')
+  btn.disabled = true; btn.textContent = 'Salvando...'
+  try {
+    await sb(`propostas?cnpj=eq.${modalCNPJ}`, {
+      method: 'PATCH',
+      prefer: 'return=minimal',
+      body: { observacao: obs }
+    })
+    const idx = todasPropostas.findIndex(p => p.cnpj === modalCNPJ)
+    if (idx !== -1) todasPropostas[idx].observacao = obs
+    document.getElementById('modal-obs').style.display = 'none'
+    modalCNPJ = null
+    showToast('Observação salva!')
+    renderTabelaPropostas()
+  } catch(e) {
+    showToast('Erro ao salvar: ' + e.message, 'error')
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar'
+  }
+}
+
+// ============================================================
+// ABA HISTÓRICO
+// ============================================================
+function renderHistorico() {
+  document.getElementById('view-historico').innerHTML = `
+  <div class="card">
+    <div class="card-title">🕒 Histórico de Processamentos</div>
+    <div id="lista-historico"><div class="empty"><div class="empty-icon">⏳</div><p>Carregando...</p></div></div>
+  </div>`
+}
+
+async function carregarHistorico() {
+  try {
+    const data = await sb('historico_processamentos?select=*&order=criado_em.desc&limit=50')
+    const lista = data || []
+    if (!lista.length) {
+      document.getElementById('lista-historico').innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>Nenhum processamento realizado ainda.</p></div>`
+      return
+    }
+    document.getElementById('lista-historico').innerHTML = lista.map(h => {
+      const dt = new Date(h.criado_em)
+      const dataFmt = dt.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric'})
+      const horaFmt = dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})
+      const arqs = (h.arquivos_enviados || []).join(', ')
+      return `<div class="hist-item">
+        <div class="hist-icon">📊</div>
+        <div class="hist-info">
+          <div class="hist-data">${dataFmt} às ${horaFmt}</div>
+          <div class="hist-detalhe">${arqs || 'Arquivos não registrados'}</div>
+        </div>
+        <span class="hist-badge">${h.total_propostas || 0} propostas</span>
+      </div>`
+    }).join('')
+  } catch(e) {
+    document.getElementById('lista-historico').innerHTML = `<div class="alert alert-danger">❌ Erro: ${e.message}</div>`
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderProcessar()
+renderPropostas()
+renderHistorico()
+</script>
+</body>
+</html>
