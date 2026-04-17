@@ -242,7 +242,8 @@ const COLABORADORES = {
   'VALÉRIO':'#FFFFFF',
   'N/A':    '#E0E0E0',
 }
-const COLAB_LIST = Object.keys(COLABORADORES)
+// Ordem dos botões de filtro: colaboradores na ordem certa, depois Valério e N/A no final
+const COLAB_LIST = ['ANDRESSA','ANNA','CAUÃ','CONRADO','JULIANO','LETICIA','MARCOS','PEDRO','RAIANE','VALÉRIO','N/A']
 
 function getCorColab(nome) {
   if (!nome || nome === 'N/A') return COLABORADORES['N/A']
@@ -583,7 +584,7 @@ async function processarPlanilhas() {
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${propostas.length}</div><div class="stat-sub">propostas</div></div>
         <div class="stat-card"><div class="stat-label">Com Responsável</div><div class="stat-value" style="color:#166534">${comResp}</div></div>
-        <div class="stat-card"><div class="stat-label">Sem Atribuir</div><div class="stat-value" style="color:${naAtrib>0?'#92400e':'#166534'}">${naAtrib}</div></div>
+        <div class="stat-card"><div class="stat-label">Propostas Antigas</div><div class="stat-value" style="color:${naAtrib>0?'#92400e':'#166534'}">${naAtrib}</div></div>
         <div class="stat-card"><div class="stat-label">Andamento</div><div class="stat-value">${and.length}</div></div>
         <div class="stat-card"><div class="stat-label">Finalizados</div><div class="stat-value">${fin.length}</div></div>
       </div>
@@ -619,12 +620,17 @@ function renderPropostas() {
     <div id="stats-propostas" class="stats-grid" style="margin-bottom:16px"></div>
     <div class="filtros-row">
       <button class="filtro-btn active" id="filtro-TODOS" style="background:#003366;color:#fff;border-color:#003366" onclick="setFiltroColab('TODOS')">Todos</button>
-      ${COLAB_LIST.map(c => {
+      ${['ANDRESSA','ANNA','CAUÃ','CONRADO','JULIANO','LETICIA','MARCOS','PEDRO','RAIANE'].map(c => {
         const bg = COLABORADORES[c]
         const fg = getTextColor(bg)
         return `<button class="filtro-btn" id="filtro-${c}" style="background:${bg};color:${fg};border-color:${bg}" onclick="setFiltroColab('${c}')">${c}</button>`
       }).join('')}
       <button class="filtro-btn" id="filtro-NOVAS" style="background:#f0fdf4;color:#166534;border:2px solid #86efac" onclick="setFiltroColab('NOVAS')">🆕 Novas</button>
+      ${['VALÉRIO','N/A'].map(c => {
+        const bg = COLABORADORES[c]
+        const fg = getTextColor(bg)
+        return `<button class="filtro-btn" id="filtro-${c}" style="background:${bg};color:${fg};border:1.5px solid #d0d5dd" onclick="setFiltroColab('${c}')">${c}</button>`
+      }).join('')}
     </div>
     <div class="filtros-row">
       <input type="text" class="search-input" placeholder="🔍 Buscar por nome, CNPJ ou etapa..." oninput="setSearch(this.value)" value="${filtroSearch}"/>
@@ -652,10 +658,13 @@ function renderStatsPropostas() {
   if (!el) return
   const total = todasPropostas.length
   const naAtrib = todasPropostas.filter(p => !p.responsavel || p.responsavel === 'N/A').length
-  const totalValor = todasPropostas.reduce((s,p) => s + (p.valor || 0), 0)
+  const totalValor = todasPropostas.reduce((s,p) => {
+    const v = typeof p.valor === 'number' ? p.valor : parseFloat(String(p.valor||'0').replace(/[^0-9.,]/g,'').replace(',','.')) || 0
+    return s + v
+  }, 0)
   el.innerHTML = `
     <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${total}</div></div>
-    <div class="stat-card"><div class="stat-label">Sem Atribuir</div><div class="stat-value" style="color:${naAtrib>0?'#92400e':'#166534'}">${naAtrib}</div></div>
+    <div class="stat-card"><div class="stat-label">Propostas Antigas</div><div class="stat-value" style="color:${naAtrib>0?'#92400e':'#166534'}">${naAtrib}</div></div>
     <div class="stat-card"><div class="stat-label">Valor Total</div><div class="stat-value" style="font-size:15px">${formatValor(totalValor)}</div></div>`
 }
 
@@ -687,14 +696,18 @@ function renderTabelaPropostas() {
       const etapa = (p.etapa||'').toLowerCase().trim()
       return resp === 'N/A' && !etapasFinalizadas.includes(etapa)
     })
-  } else if (filtroColab !== 'TODOS') {
+  } else if (filtroColab === 'TODOS') {
+    rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() !== 'N/A')
+  } else {
     rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === filtroColab)
   }
   if (filtroSearch.trim()) {
     const q = filtroSearch.toLowerCase()
+    const qCNPJ = q.replace(/[.\-\/]/g, '')
     rows = rows.filter(p =>
       (p.razao_social||'').toLowerCase().includes(q) ||
-      (p.cnpj||'').includes(q) ||
+      (p.cnpj||'').includes(qCNPJ) ||
+      formatCNPJ(p.cnpj||'').includes(q) ||
       (p.etapa||'').toLowerCase().includes(q)
     )
   }
