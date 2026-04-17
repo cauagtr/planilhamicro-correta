@@ -488,8 +488,20 @@ function deduplicar(rows) {
   })
 }
 
-function aplicarVlookup(rows, ref) {
+function aplicarVlookup(rows, ref, mapaAtribuicoes = {}) {
   return rows.map(row => {
+    const chave = `${normCNPJ(row.cnpj)}|${(row.etapa||'').toLowerCase()}`
+    // Prioridade 1: atribuição manual já salva no banco
+    const atrib = mapaAtribuicoes[chave]
+    if (atrib) {
+      return {
+        ...row,
+        observacoesAnteriores: atrib.observacao || '',
+        responsavel: atrib.responsavel,
+        responsavelFinal: atrib.responsavel_final,
+      }
+    }
+    // Prioridade 2: referência do dia anterior
     const r = ref.find(x => normCNPJ(x.cnpj) === normCNPJ(row.cnpj))
     const resp = r && r.responsavel_final && r.responsavel_final !== 'N/A' ? r.responsavel_final : 'N/A'
     return {
@@ -528,7 +540,23 @@ async function processarPlanilhas() {
     let fin = transformar(rowsFin)
     fin = filtrarFinalizados(fin)
     const merged = deduplicar([...and, ...fin])
-    const comVlookup = aplicarVlookup(merged, referencia)
+
+    // Buscar atribuições manuais já salvas no banco para preservá-las
+    const propostasExistentes = await sb('propostas?select=cnpj,etapa,responsavel,responsavel_final,observacao&limit=2000')
+    const mapaAtribuicoes = {}
+    if (propostasExistentes) {
+      propostasExistentes.forEach(p => {
+        if (p.responsavel && p.responsavel !== 'N/A') {
+          mapaAtribuicoes[`${normCNPJ(p.cnpj)}|${(p.etapa||'').toLowerCase()}`] = {
+            responsavel: p.responsavel,
+            responsavel_final: p.responsavel_final,
+            observacao: p.observacao || ''
+          }
+        }
+      })
+    }
+
+    const comVlookup = aplicarVlookup(merged, referencia, mapaAtribuicoes)
 
     const propostas = comVlookup.map(r => ({
       responsavel: r.responsavel || 'N/A',
@@ -784,11 +812,31 @@ function renderTabelaPropostas() {
 async function atribuirResponsavel(cnpj, resp, selectEl) {
   if (!resp) return
   try {
+    // 1. Salva na tabela propostas
     await sb(`propostas?cnpj=eq.${cnpj}`, {
       method: 'PATCH',
       prefer: 'return=minimal',
       body: { responsavel: resp, responsavel_final: resp }
     })
+
+    // 2. Atualiza a planilha_referencia mais recente para persistir entre reprocessamentos
+    const refs = await sb('planilha_referencia?select=id,dados&order=criado_em.desc&limit=1')
+    if (refs && refs[0]) {
+      const refId = refs[0].id
+      const dados = refs[0].dados || []
+      const idx2 = dados.findIndex(r => normCNPJ(r.cnpj) === normCNPJ(cnpj))
+      if (idx2 !== -1) {
+        dados[idx2].responsavel_final = resp
+      } else {
+        dados.push({ cnpj: normCNPJ(cnpj), responsavel_final: resp, observacao: '' })
+      }
+      await sb(`planilha_referencia?id=eq.${refId}`, {
+        method: 'PATCH',
+        prefer: 'return=minimal',
+        body: { dados }
+      })
+    }
+
     const idx = todasPropostas.findIndex(p => p.cnpj === cnpj)
     if (idx !== -1) { todasPropostas[idx].responsavel = resp; todasPropostas[idx].responsavel_final = resp }
     showToast(`${resp} atribuído com sucesso!`)
