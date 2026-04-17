@@ -308,14 +308,16 @@ function parseData(val) {
 
 function parseValor(v) {
   if (v === null || v === undefined || v === '') return null
-  // raw:true entrega o valor numérico bruto do Excel (ex: 20000 = R$ 20.000,00)
-  // centavos legítimos são preservados (ex: 74120.18 = R$ 74.120,18)
+  // raw:false entrega string formatada do Excel (ex: "20.000,00" = R$ 20.000,00)
   if (typeof v === 'number') return Math.round(v * 100) / 100
   const s = String(v).trim().replace(/R\$\s?/g,'').replace(/\s/g,'')
-  // String no formato brasileiro: "20.000,00" → 20000
-  if (s.match(/^\d{1,3}(\.\d{3})*(,\d{1,2})?$/)) return parseFloat(s.replace(/\./g,'').replace(',','.'))
-  // String no formato americano ou número puro: "20000" ou "20000.00"
-  return parseFloat(s.replace(',','.')) || null
+  if (!s || s === '-') return null
+  // Formato brasileiro com milhar: "20.000,00" ou "20.000" → 20000
+  if (s.includes(',')) return parseFloat(s.replace(/\./g,'').replace(',','.')) || null
+  // Formato sem vírgula mas com ponto de milhar: "20.000" → 20000
+  if (s.match(/^\d{1,3}(\.\d{3})+$/)) return parseFloat(s.replace(/\./g,'')) || null
+  // Número puro ou americano: "20000" ou "20000.00"
+  return parseFloat(s) || null
 }
 
 function getCol(row, ...names) {
@@ -454,7 +456,7 @@ function lerPlanilha(file) {
       try {
         const wb = XLSX.read(e.target.result, { type:'binary', cellDates:true, cellNF:false, cellText:false })
         const ws = wb.Sheets[wb.SheetNames[0]]
-        const rows = XLSX.utils.sheet_to_json(ws, { defval:'', raw:true })
+        const rows = XLSX.utils.sheet_to_json(ws, { defval:'', raw:false })
         res(rows)
       } catch(err) { rej(err) }
     }
