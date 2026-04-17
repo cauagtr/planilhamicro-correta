@@ -624,6 +624,7 @@ function renderPropostas() {
         const fg = getTextColor(bg)
         return `<button class="filtro-btn" id="filtro-${c}" style="background:${bg};color:${fg};border-color:${bg}" onclick="setFiltroColab('${c}')">${c}</button>`
       }).join('')}
+      <button class="filtro-btn" id="filtro-NOVAS" style="background:#f0fdf4;color:#166534;border:2px solid #86efac" onclick="setFiltroColab('NOVAS')">🆕 Novas</button>
     </div>
     <div class="filtros-row">
       <input type="text" class="search-input" placeholder="🔍 Buscar por nome, CNPJ ou etapa..." oninput="setSearch(this.value)" value="${filtroSearch}"/>
@@ -661,7 +662,11 @@ function renderStatsPropostas() {
 function setFiltroColab(c) {
   filtroColab = c
   document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'))
-  document.getElementById(`filtro-${c}`)?.classList.add('active')
+  const btn = document.getElementById(`filtro-${c}`)
+  if (btn) {
+    btn.classList.add('active')
+    if (c === 'NOVAS') btn.style.borderColor = '#003366'
+  }
   renderTabelaPropostas()
 }
 
@@ -675,7 +680,16 @@ function setSort(col) {
 
 function renderTabelaPropostas() {
   let rows = [...todasPropostas]
-  if (filtroColab !== 'TODOS') rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === filtroColab)
+  const etapasFinalizadas = ['concedido','excluído','excluido','recusado']
+  if (filtroColab === 'NOVAS') {
+    rows = rows.filter(p => {
+      const resp = (p.responsavel||'N/A').toUpperCase().trim()
+      const etapa = (p.etapa||'').toLowerCase().trim()
+      return resp === 'N/A' && !etapasFinalizadas.includes(etapa)
+    })
+  } else if (filtroColab !== 'TODOS') {
+    rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === filtroColab)
+  }
   if (filtroSearch.trim()) {
     const q = filtroSearch.toLowerCase()
     rows = rows.filter(p =>
