@@ -297,13 +297,33 @@ function formatData(v) {
 }
 
 function parseData(val) {
-  if (!val) return null
-  if (val instanceof Date) return val
+  if (!val || val === '') return null
+  // Já é Date válido
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val
   const s = String(val).trim()
-  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/)
-  if (m) { const [,d,mo,y] = m; const yr = y.length===2?`20${y}`:y; return new Date(`${yr}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`) }
-  const d = new Date(s); if (!isNaN(d.getTime())) return d
-  return null
+  if (!s) return null
+  // Formato brasileiro DD/MM/AAAA ou DD-MM-AAAA (mais comum nas planilhas)
+  const mBR = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/)
+  if (mBR) {
+    const [,d,mo,y] = mBR
+    const yr = y.length===2?`20${y}`:y
+    const dt = new Date(`${yr}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}T12:00:00`)
+    return isNaN(dt.getTime()) ? null : dt
+  }
+  // Formato ISO AAAA-MM-DD
+  const mISO = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (mISO) {
+    const dt = new Date(`${mISO[0]}T12:00:00`)
+    return isNaN(dt.getTime()) ? null : dt
+  }
+  // Número serial do Excel (dias desde 01/01/1900)
+  if (s.match(/^\d+$/) && Number(s) > 40000 && Number(s) < 60000) {
+    const dt = new Date((Number(s) - 25569) * 86400 * 1000)
+    return isNaN(dt.getTime()) ? null : dt
+  }
+  // Tentativa genérica
+  const dt = new Date(s)
+  return isNaN(dt.getTime()) ? null : dt
 }
 
 function parseValor(v) {
@@ -567,7 +587,10 @@ async function processarPlanilhas() {
       etapa: r.etapa,
       valor: parseValor(r.valor),
       email: r.email,
-      na_etapa_desde: r.naEtapaDe ? r.naEtapaDe.toISOString().split('T')[0] : null,
+      na_etapa_desde: (() => {
+        try { return r.naEtapaDe && !isNaN(r.naEtapaDe.getTime()) ? r.naEtapaDe.toISOString().split('T')[0] : null }
+        catch(e) { return null }
+      })(),
       observacoes_anteriores: r.observacoesAnteriores || '',
       observacao: '',
       responsavel_final: r.responsavelFinal || 'N/A',
