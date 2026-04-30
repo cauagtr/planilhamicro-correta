@@ -504,7 +504,7 @@ function filtrarFinalizados(rows) {
 function deduplicar(rows) {
   const visto = new Set()
   return rows.filter(r => {
-    const k = `${r.cnpj}|${String(r.etapa).toLowerCase()}`
+    const k = normCNPJ(r.cnpj)
     if (visto.has(k)) return false
     visto.add(k); return true
   })
@@ -512,7 +512,7 @@ function deduplicar(rows) {
 
 function aplicarVlookup(rows, ref, mapaAtribuicoes = {}) {
   return rows.map(row => {
-    const chave = `${normCNPJ(row.cnpj)}|${(row.etapa||'').toLowerCase()}`
+    const chave = normCNPJ(row.cnpj)
     // Prioridade 1: atribuição manual já salva no banco
     const atrib = mapaAtribuicoes[chave]
     if (atrib) {
@@ -569,7 +569,7 @@ async function processarPlanilhas() {
     if (propostasExistentes) {
       propostasExistentes.forEach(p => {
         if (p.responsavel && p.responsavel !== 'N/A') {
-          mapaAtribuicoes[`${normCNPJ(p.cnpj)}|${(p.etapa||'').toLowerCase()}`] = {
+          mapaAtribuicoes[normCNPJ(p.cnpj)] = {
             responsavel: p.responsavel,
             responsavel_final: p.responsavel_final,
             observacao: p.observacao || ''
@@ -599,7 +599,7 @@ async function processarPlanilhas() {
     setProgresso(55, `Salvando ${propostas.length} propostas...`)
     let salvas = 0
     for (const p of propostas) {
-      await sb('propostas?on_conflict=cnpj,etapa', {
+      await sb('propostas?on_conflict=cnpj', {
         method: 'POST',
         prefer: 'resolution=merge-duplicates',
         body: p
