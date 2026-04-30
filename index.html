@@ -144,6 +144,9 @@
 
   /* RESPONSAVEL COLOR */
   select.resp-select option { background: #fff; color: #000; }
+  .btn-trocar { background: rgba(0,0,0,0.12); border: none; border-radius: 4px; padding: 2px 7px; cursor: pointer; font-size: 13px; color: inherit; transition: background .15s; vertical-align: middle; }
+  .btn-trocar:hover { background: rgba(0,0,0,0.25); }
+  .trocar-select { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 600; border: 1px solid rgba(0,0,0,0.2); border-radius: 4px; padding: 3px 6px; cursor: pointer; background: #fff; color: #1a1a2e; margin-left: 4px; }
 
   /* SPINNER */
   .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
@@ -801,12 +804,16 @@ function renderTabelaPropostas() {
     const resp = p.responsavel || 'N/A'
     const bg = getCorColab(resp)
     const fg = getTextColor(bg)
-    const respCell = resp === 'N/A'
-      ? `<td><select class="resp-select" style="background:${bg};color:${fg}" onchange="atribuirResponsavel('${p.cnpj}',this.value,this)" data-cnpj="${p.cnpj}">
-           <option value="">— Atribuir —</option>
-           ${COLAB_LIST.filter(c=>c!=='N/A').map(c=>`<option value="${c}">${c}</option>`).join('')}
-         </select></td>`
-      : `<td><span class="resp-chip" style="background:${bg};color:${fg}">${resp}</span></td>`
+    const respCell = `<td style="white-space:nowrap">
+      ${resp === 'N/A'
+        ? `<select class="resp-select" style="background:${bg};color:${fg}" onchange="atribuirResponsavel('${p.cnpj}',this.value,this)" data-cnpj="${p.cnpj}">
+             <option value="">— Atribuir —</option>
+             ${COLAB_LIST.filter(c=>c!=='N/A').map(c=>`<option value="${c}">${c}</option>`).join('')}
+           </select>`
+        : `<span class="resp-chip" style="background:${bg};color:${fg};margin-right:6px">${resp}</span>
+           <button class="btn-trocar" title="Trocar responsável" onclick="abrirTrocar('${p.cnpj}', '${resp}', this)">✎</button>`
+      }
+    </td>`
 
     const obs = p.observacao || ''
     const obsCell = `<td><button class="btn btn-secondary btn-sm" onclick="abrirModal('${p.cnpj}','${(p.razao_social||'').replace(/'/g,"\\'")}','${(obs).replace(/'/g,"\\'")}','${(p.observacoes_anteriores||'').replace(/'/g,"\\'")}')">
@@ -832,6 +839,33 @@ function renderTabelaPropostas() {
         <tbody>${trs}</tbody>
       </table>
     </div>`
+}
+
+function abrirTrocar(cnpj, respAtual, btn) {
+  // Se já tem select aberto nessa linha, fecha
+  const existing = btn.parentElement.querySelector('.trocar-select')
+  if (existing) { existing.remove(); btn.style.display = ''; return }
+
+  btn.style.display = 'none'
+  const sel = document.createElement('select')
+  sel.className = 'trocar-select'
+  sel.innerHTML = `<option value="">Selecionar...</option>` +
+    COLAB_LIST.filter(c => c !== 'N/A').map(c =>
+      `<option value="${c}" ${c === respAtual ? 'selected' : ''}>${c}</option>`
+    ).join('')
+
+  sel.onchange = async function() {
+    const novo = sel.value
+    if (!novo || novo === respAtual) { sel.remove(); btn.style.display = ''; return }
+    await atribuirResponsavel(cnpj, novo, null)
+  }
+
+  sel.onblur = function() {
+    setTimeout(() => { sel.remove(); btn.style.display = ''; }, 200)
+  }
+
+  btn.parentElement.appendChild(sel)
+  sel.focus()
 }
 
 async function atribuirResponsavel(cnpj, resp, selectEl) {
