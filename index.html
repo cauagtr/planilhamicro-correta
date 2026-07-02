@@ -490,11 +490,9 @@ function lerPlanilha(file) {
 
 function transformar(rows) {
   return rows.map(row => ({
-    cnpj: normCNPJ(getCol(row,'CPF/CNPJ','CNPJ','CPF')),
-    razaoSocial: getCol(row,'Nome do Cliente','Razão Social','Razao Social'),
+    codigo: String(getCol(row,'Código da Operação','Codigo da Operação','Codigo da Operacao','Código da Operacao')).trim(),
     etapa: getCol(row,'Etapa'),
     valor: getCol(row,'Valor Solicitado','Valor'),
-    email: getCol(row,'Email','E-mail'),
     naEtapaDe: parseData(getCol(row,'Na Etapa Desde','Na Etapa De')),
   }))
 }
@@ -507,7 +505,8 @@ function filtrarFinalizados(rows) {
 function deduplicar(rows) {
   const visto = new Set()
   return rows.filter(r => {
-    const k = normCNPJ(r.cnpj)
+    const k = String(r.codigo).trim()
+    if (!k) return false
     if (visto.has(k)) return false
     visto.add(k); return true
   })
@@ -515,7 +514,7 @@ function deduplicar(rows) {
 
 function aplicarVlookup(rows, ref, mapaAtribuicoes = {}) {
   return rows.map(row => {
-    const chave = normCNPJ(row.cnpj)
+    const chave = String(row.codigo).trim()
     // Prioridade 1: atribuição manual já salva no banco
     const atrib = mapaAtribuicoes[chave]
     if (atrib) {
@@ -527,7 +526,7 @@ function aplicarVlookup(rows, ref, mapaAtribuicoes = {}) {
       }
     }
     // Prioridade 2: referência do dia anterior
-    const r = ref.find(x => normCNPJ(x.cnpj) === normCNPJ(row.cnpj))
+    const r = ref.find(x => String(x.codigo).trim() === String(row.codigo).trim())
     const resp = r && r.responsavel_final && r.responsavel_final !== 'N/A' ? r.responsavel_final : 'N/A'
     return {
       ...row,
@@ -567,12 +566,12 @@ async function processarPlanilhas() {
     const merged = deduplicar([...and, ...fin])
 
     // Buscar atribuições manuais já salvas no banco para preservá-las
-    const propostasExistentes = await sb('propostas?select=cnpj,etapa,responsavel,responsavel_final,observacao&limit=2000')
+    const propostasExistentes = await sb('propostas?select=codigo,etapa,responsavel,responsavel_final,observacao&limit=2000')
     const mapaAtribuicoes = {}
     if (propostasExistentes) {
       propostasExistentes.forEach(p => {
         if (p.responsavel && p.responsavel !== 'N/A') {
-          mapaAtribuicoes[normCNPJ(p.cnpj)] = {
+          mapaAtribuicoes[String(p.codigo).trim()] = {
             responsavel: p.responsavel,
             responsavel_final: p.responsavel_final,
             observacao: p.observacao || ''
@@ -585,11 +584,9 @@ async function processarPlanilhas() {
 
     const propostas = comVlookup.map(r => ({
       responsavel: r.responsavel || 'N/A',
-      cnpj: r.cnpj,
-      razao_social: r.razaoSocial,
+      codigo: r.codigo,
       etapa: r.etapa,
       valor: parseValor(r.valor),
-      email: r.email,
       na_etapa_desde: (() => {
         try { return r.naEtapaDe && !isNaN(r.naEtapaDe.getTime()) ? r.naEtapaDe.toISOString().split('T')[0] : null }
         catch(e) { return null }
@@ -602,7 +599,7 @@ async function processarPlanilhas() {
     setProgresso(55, `Salvando ${propostas.length} propostas...`)
     let salvas = 0
     for (const p of propostas) {
-      await sb('propostas?on_conflict=cnpj', {
+      await sb('propostas?on_conflict=codigo', {
         method: 'POST',
         prefer: 'resolution=merge-duplicates',
         body: p
@@ -623,7 +620,7 @@ async function processarPlanilhas() {
 
     setProgresso(94, 'Salvando referência para amanhã...')
     const novaRef = propostas.map(p => ({
-      cnpj: p.cnpj,
+      codigo: p.codigo,
       observacao: p.observacao,
       responsavel_final: p.responsavel_final
     }))
@@ -669,9 +666,9 @@ async function processarPlanilhas() {
 let todasPropostas = []
 let filtroColab = 'TODOS'
 let filtroSearch = ''
-let sortCol = 'razao_social'
+let sortCol = 'codigo'
 let sortDir = 1
-let modalCNPJ = null
+let modalCodigo = null
 
 function renderPropostas() {
   document.getElementById('view-propostas').innerHTML = `
@@ -693,7 +690,7 @@ function renderPropostas() {
       }).join('')}
     </div>
     <div class="filtros-row">
-      <input type="text" class="search-input" placeholder="🔍 Buscar por nome, CNPJ ou etapa..." oninput="setSearch(this.value)" value="${filtroSearch}"/>
+      <input type="text" class="search-input" placeholder="🔍 Buscar por código ou etapa..." oninput="setSearch(this.value)" value="${filtroSearch}"/>
       <button class="btn btn-secondary btn-sm" onclick="carregarPropostas()">↺ Atualizar</button>
     </div>
     <div id="tabela-propostas">
@@ -704,7 +701,7 @@ function renderPropostas() {
 
 async function carregarPropostas() {
   try {
-    const data = await sb('propostas?select=*&order=razao_social.asc&limit=2000')
+    const data = await sb('propostas?select=*&order=codigo.asc&limit=2000')
     todasPropostas = data || []
     renderTabelaPropostas()
     renderStatsPropostas()
@@ -763,11 +760,8 @@ function renderTabelaPropostas() {
   }
   if (filtroSearch.trim()) {
     const q = filtroSearch.toLowerCase()
-    const qCNPJ = q.replace(/[.\-\/]/g, '')
     rows = rows.filter(p =>
-      (p.razao_social||'').toLowerCase().includes(q) ||
-      (p.cnpj||'').includes(qCNPJ) ||
-      formatCNPJ(p.cnpj||'').includes(q) ||
+      String(p.codigo||'').toLowerCase().includes(q) ||
       (p.etapa||'').toLowerCase().includes(q)
     )
   }
@@ -779,8 +773,7 @@ function renderTabelaPropostas() {
 
   const cols = [
     {key:'responsavel', label:'Responsável'},
-    {key:'razao_social', label:'Razão Social'},
-    {key:'cnpj', label:'CNPJ'},
+    {key:'codigo', label:'Código da Operação'},
     {key:'etapa', label:'Etapa'},
     {key:'valor', label:'Valor', align:'right'},
     {key:'na_etapa_desde', label:'Na Etapa Desde'},
@@ -806,24 +799,23 @@ function renderTabelaPropostas() {
     const fg = getTextColor(bg)
     const respCell = `<td style="white-space:nowrap">
       ${resp === 'N/A'
-        ? `<select class="resp-select" style="background:${bg};color:${fg}" onchange="atribuirResponsavel('${p.cnpj}',this.value,this)" data-cnpj="${p.cnpj}">
+        ? `<select class="resp-select" style="background:${bg};color:${fg}" onchange="atribuirResponsavel('${p.codigo}',this.value,this)" data-codigo="${p.codigo}">
              <option value="">— Atribuir —</option>
              ${COLAB_LIST.filter(c=>c!=='N/A').map(c=>`<option value="${c}">${c}</option>`).join('')}
            </select>`
         : `<span class="resp-chip" style="background:${bg};color:${fg};margin-right:6px">${resp}</span>
-           <button class="btn-trocar" title="Trocar responsável" onclick="abrirTrocar('${p.cnpj}', '${resp}', this)">✎</button>`
+           <button class="btn-trocar" title="Trocar responsável" onclick="abrirTrocar('${p.codigo}', '${resp}', this)">✎</button>`
       }
     </td>`
 
     const obs = p.observacao || ''
-    const obsCell = `<td><button class="btn btn-secondary btn-sm" onclick="abrirModal('${p.cnpj}','${(p.razao_social||'').replace(/'/g,"\\'")}','${(obs).replace(/'/g,"\\'")}','${(p.observacoes_anteriores||'').replace(/'/g,"\\'")}')">
+    const obsCell = `<td><button class="btn btn-secondary btn-sm" onclick="abrirModal('${p.codigo}','${(obs).replace(/'/g,"\\'")}','${(p.observacoes_anteriores||'').replace(/'/g,"\\'")}')">
       ${obs ? '✏ Ver/Editar' : '+ Adicionar'}
     </button></td>`
 
-    return `<tr style="background:${bg};color:${fg}" data-cnpj="${p.cnpj}">
+    return `<tr style="background:${bg};color:${fg}" data-codigo="${p.codigo}">
       ${respCell}
-      <td style="font-weight:500">${p.razao_social||'—'}</td>
-      <td class="td-cnpj">${formatCNPJ(p.cnpj)}</td>
+      <td class="td-cnpj" style="font-weight:600">${p.codigo||'—'}</td>
       <td class="td-etapa">${etapaBadge(p.etapa)}</td>
       <td class="td-valor" style="color:${fg}">${formatValor(p.valor)}</td>
       <td>${formatData(p.na_etapa_desde)}</td>
@@ -841,7 +833,7 @@ function renderTabelaPropostas() {
     </div>`
 }
 
-function abrirTrocar(cnpj, respAtual, btn) {
+function abrirTrocar(codigo, respAtual, btn) {
   // Se já tem select aberto nessa linha, fecha
   const existing = btn.parentElement.querySelector('.trocar-select')
   if (existing) { existing.remove(); btn.style.display = ''; return }
@@ -857,7 +849,7 @@ function abrirTrocar(cnpj, respAtual, btn) {
   sel.onchange = async function() {
     const novo = sel.value
     if (!novo || novo === respAtual) { sel.remove(); btn.style.display = ''; return }
-    await atribuirResponsavel(cnpj, novo, null)
+    await atribuirResponsavel(codigo, novo, null)
   }
 
   sel.onblur = function() {
@@ -868,11 +860,11 @@ function abrirTrocar(cnpj, respAtual, btn) {
   sel.focus()
 }
 
-async function atribuirResponsavel(cnpj, resp, selectEl) {
+async function atribuirResponsavel(codigo, resp, selectEl) {
   if (!resp) return
   try {
     // 1. Salva na tabela propostas
-    await sb(`propostas?cnpj=eq.${cnpj}`, {
+    await sb(`propostas?codigo=eq.${encodeURIComponent(codigo)}`, {
       method: 'PATCH',
       prefer: 'return=minimal',
       body: { responsavel: resp, responsavel_final: resp }
@@ -883,11 +875,11 @@ async function atribuirResponsavel(cnpj, resp, selectEl) {
     if (refs && refs[0]) {
       const refId = refs[0].id
       const dados = refs[0].dados || []
-      const idx2 = dados.findIndex(r => normCNPJ(r.cnpj) === normCNPJ(cnpj))
+      const idx2 = dados.findIndex(r => String(r.codigo).trim() === String(codigo).trim())
       if (idx2 !== -1) {
         dados[idx2].responsavel_final = resp
       } else {
-        dados.push({ cnpj: normCNPJ(cnpj), responsavel_final: resp, observacao: '' })
+        dados.push({ codigo: String(codigo).trim(), responsavel_final: resp, observacao: '' })
       }
       await sb(`planilha_referencia?id=eq.${refId}`, {
         method: 'PATCH',
@@ -896,7 +888,7 @@ async function atribuirResponsavel(cnpj, resp, selectEl) {
       })
     }
 
-    const idx = todasPropostas.findIndex(p => p.cnpj === cnpj)
+    const idx = todasPropostas.findIndex(p => p.codigo === codigo)
     if (idx !== -1) { todasPropostas[idx].responsavel = resp; todasPropostas[idx].responsavel_final = resp }
     showToast(`${resp} atribuído com sucesso!`)
     renderTabelaPropostas()
@@ -909,10 +901,10 @@ async function atribuirResponsavel(cnpj, resp, selectEl) {
 // ============================================================
 // MODAL OBSERVAÇÃO
 // ============================================================
-function abrirModal(cnpj, nome, obs, obsAntiga) {
-  modalCNPJ = cnpj
-  document.getElementById('modal-title').textContent = nome || 'Observação'
-  document.getElementById('modal-info').textContent = `CNPJ: ${formatCNPJ(cnpj)}`
+function abrirModal(codigo, obs, obsAntiga) {
+  modalCodigo = codigo
+  document.getElementById('modal-title').textContent = 'Observação'
+  document.getElementById('modal-info').textContent = `Código da Operação: ${codigo}`
   document.getElementById('modal-obs-antiga').textContent = obsAntiga || '—'
   document.getElementById('modal-textarea').value = obs || ''
   document.getElementById('modal-obs').style.display = 'flex'
@@ -921,24 +913,24 @@ function abrirModal(cnpj, nome, obs, obsAntiga) {
 function fecharModal(e) {
   if (e && e.target !== document.getElementById('modal-obs')) return
   document.getElementById('modal-obs').style.display = 'none'
-  modalCNPJ = null
+  modalCodigo = null
 }
 
 async function salvarObservacao() {
-  if (!modalCNPJ) return
+  if (!modalCodigo) return
   const obs = document.getElementById('modal-textarea').value.trim()
   const btn = document.getElementById('btn-salvar-obs')
   btn.disabled = true; btn.textContent = 'Salvando...'
   try {
-    await sb(`propostas?cnpj=eq.${modalCNPJ}`, {
+    await sb(`propostas?codigo=eq.${encodeURIComponent(modalCodigo)}`, {
       method: 'PATCH',
       prefer: 'return=minimal',
       body: { observacao: obs }
     })
-    const idx = todasPropostas.findIndex(p => p.cnpj === modalCNPJ)
+    const idx = todasPropostas.findIndex(p => p.codigo === modalCodigo)
     if (idx !== -1) todasPropostas[idx].observacao = obs
     document.getElementById('modal-obs').style.display = 'none'
-    modalCNPJ = null
+    modalCodigo = null
     showToast('Observação salva!')
     renderTabelaPropostas()
   } catch(e) {
