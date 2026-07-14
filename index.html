@@ -96,11 +96,37 @@
   tbody td { padding: 9px 12px; border-bottom: 1px solid rgba(0,0,0,0.06); }
   .td-cnpj { font-family: 'IBM Plex Mono', monospace; font-size: 12px; white-space: nowrap; }
   .td-valor { font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-align: right; }
-  .td-etapa .etapa-badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
-  .etapa-concedido { background: #dcfce7; color: #166534; }
-  .etapa-excluido, .etapa-excluído { background: #fee2e2; color: #991b1b; }
-  .etapa-recusado { background: #fef3c7; color: #92400e; }
-  .etapa-default { background: #f0f9ff; color: #0369a1; }
+  .td-etapa .etapa-badge { font-size: 11.5px; padding: 4px 12px; border-radius: 20px; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; border: 1px solid transparent; }
+  .etapa-badge .etapa-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .etapa-concedido { background: #dcfce7; color: #14532d; border-color: #86efac; }
+  .etapa-concedido .etapa-dot { background: #16a34a; }
+  .etapa-excluido, .etapa-excluído { background: #fee2e2; color: #7f1d1d; border-color: #fca5a5; }
+  .etapa-excluido .etapa-dot, .etapa-excluído .etapa-dot { background: #dc2626; }
+  .etapa-recusado { background: #fef3c7; color: #78350f; border-color: #fcd34d; }
+  .etapa-recusado .etapa-dot { background: #d97706; }
+  .etapa-default { background: #e0f2fe; color: #075985; border-color: #7dd3fc; }
+  .etapa-default .etapa-dot { background: #0284c7; }
+
+  /* ── TABELA REDESENHADA (Fase 1) ── */
+  .table-wrap { max-height: 620px; overflow-y: auto; overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  thead th { position: sticky; top: 0; z-index: 10; background: #f1f5f9; box-shadow: 0 2px 0 rgba(0,0,0,0.06); }
+  tbody tr { background: #fff; transition: background .12s; }
+  tbody tr:nth-child(even) { background: #fafbfc; }
+  tbody tr:hover { background: #f0f6ff; }
+  tbody td { padding: 10px 12px; border-bottom: 1px solid #eef0f3; color: var(--text); }
+
+  /* Célula do responsável com tarja lateral + avatar */
+  .resp-cell { display: flex; align-items: center; gap: 10px; white-space: nowrap; padding-left: 4px; position: relative; }
+  .resp-tarja { position: absolute; left: -12px; top: -10px; bottom: -10px; width: 4px; border-radius: 0 3px 3px 0; }
+  .resp-avatar { width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; border: 1.5px solid rgba(0,0,0,0.08); }
+  .resp-nome { font-size: 12.5px; font-weight: 600; color: var(--text); }
+  .btn-trocar-v2 { background: transparent; border: none; border-radius: 5px; padding: 3px 6px; cursor: pointer; font-size: 12px; color: #9ca3af; transition: all .15s; }
+  .btn-trocar-v2:hover { background: #eef2ff; color: var(--azul); }
+  tr:hover .btn-trocar-v2 { color: #6b7280; }
+
+  /* Indicador de observação */
+  .obs-indicator { display: inline-flex; align-items: center; gap: 4px; }
+  .obs-dot { width: 6px; height: 6px; border-radius: 50%; background: #16a34a; display: inline-block; }
 
   /* RESPONSAVEL */
   .resp-select { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 600; border: none; border-radius: 4px; padding: 3px 6px; cursor: pointer; background: transparent; width: 100%; }
@@ -395,7 +421,15 @@ function etapaBadge(etapa) {
   if (e === 'concedido') cls = 'etapa-concedido'
   else if (e === 'excluído' || e === 'excluido') cls = 'etapa-excluido'
   else if (e === 'recusado') cls = 'etapa-recusado'
-  return `<span class="etapa-badge ${cls}">${etapa||'—'}</span>`
+  return `<span class="etapa-badge ${cls}"><span class="etapa-dot"></span>${etapa||'—'}</span>`
+}
+
+// Gera as iniciais do colaborador para o avatar
+function getIniciais(nome) {
+  if (!nome || nome === 'N/A') return '?'
+  const partes = nome.trim().split(/\s+/)
+  if (partes.length === 1) return partes[0].substring(0,2).toUpperCase()
+  return (partes[0][0] + partes[partes.length-1][0]).toUpperCase()
 }
 
 function showToast(msg, type='success') {
@@ -933,27 +967,35 @@ function renderTabelaPropostas() {
     const resp = p.responsavel || 'N/A'
     const bg = getCorColab(resp)
     const fg = getTextColor(bg)
-    const respCell = `<td style="white-space:nowrap">
-      ${resp === 'N/A'
-        ? `<select class="resp-select" style="background:${bg};color:${fg}" onchange="atribuirResponsavel('${p.codigo}',this.value,this)" data-codigo="${p.codigo}">
+    const iniciais = getIniciais(resp)
+
+    const respCell = resp === 'N/A'
+      ? `<td><div class="resp-cell"><span class="resp-tarja" style="background:#cbd5e1"></span>
+           <select class="resp-select" style="background:${bg};color:${fg};border:1px solid #cbd5e1" onchange="atribuirResponsavel('${p.codigo}',this.value,this)" data-codigo="${p.codigo}">
              <option value="">— Atribuir —</option>
              ${COLAB_LIST.filter(c=>c!=='N/A').map(c=>`<option value="${c}">${c}</option>`).join('')}
-           </select>`
-        : `<span class="resp-chip" style="background:${bg};color:${fg};margin-right:6px">${resp}</span>
-           <button class="btn-trocar" title="Trocar responsável" onclick="abrirTrocar('${p.codigo}', '${resp}', this)">✎</button>`
-      }
-    </td>`
+           </select></div></td>`
+      : `<td><div class="resp-cell">
+           <span class="resp-tarja" style="background:${bg}"></span>
+           <span class="resp-avatar" style="background:${bg};color:${fg}">${iniciais}</span>
+           <span class="resp-nome">${resp}</span>
+           <button class="btn-trocar-v2" title="Trocar responsável" onclick="abrirTrocar('${p.codigo}', '${resp}', this)">✎</button>
+         </div></td>`
 
     const obs = p.observacao || ''
-    const obsCell = `<td><button class="btn btn-secondary btn-sm" onclick="abrirModal('${p.codigo}','${(obs).replace(/'/g,"\\'")}','${(p.observacoes_anteriores||'').replace(/'/g,"\\'")}')">
-      ${obs ? '✏ Ver/Editar' : '+ Adicionar'}
-    </button></td>`
+    const obsCell = obs
+      ? `<td><button class="btn btn-secondary btn-sm" onclick="abrirModal('${p.codigo}','${(obs).replace(/'/g,"\\'")}','${(p.observacoes_anteriores||'').replace(/'/g,"\\'")}')">
+           <span class="obs-indicator"><span class="obs-dot"></span>✏ Ver/Editar</span>
+         </button></td>`
+      : `<td><button class="btn btn-secondary btn-sm" style="color:#9ca3af" onclick="abrirModal('${p.codigo}','','${(p.observacoes_anteriores||'').replace(/'/g,"\\'")}')">
+           + Adicionar
+         </button></td>`
 
-    return `<tr style="background:${bg};color:${fg}" data-codigo="${p.codigo}">
+    return `<tr data-codigo="${p.codigo}">
       ${respCell}
-      <td class="td-cnpj" style="font-weight:600">${p.codigo||'—'}</td>
+      <td class="td-cnpj" style="font-weight:700">${p.codigo||'—'}</td>
       <td class="td-etapa">${etapaBadge(p.etapa)}</td>
-      <td class="td-valor" style="color:${fg}">${formatValor(p.valor)}</td>
+      <td class="td-valor">${formatValor(p.valor)}</td>
       <td>${formatData(p.na_etapa_desde)}</td>
       ${obsCell}
     </tr>`
