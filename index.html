@@ -813,7 +813,8 @@ function renderStatsPropostas() {
       <div class="dash-card accent-azul"><div class="dash-label">Propostas de ${filtroColab}</div><div class="dash-value">${total}</div></div>
       <div class="dash-card accent-verde"><div class="dash-label">Ativas</div><div class="dash-value">${totalAtivas}</div><div class="dash-sub">em tratativa agora</div></div>
       <div class="dash-card accent-dourado"><div class="dash-label">Valor em Tratativa</div><div class="dash-value" style="font-size:19px">${formatValor(valorAtivo)}</div><div class="dash-sub">só propostas ativas</div></div>
-      <div class="dash-card accent-roxo"><div class="dash-label">Concedidas</div><div class="dash-value">${concedidas}</div></div>`
+      <div class="dash-card accent-roxo"><div class="dash-label">Valor Total</div><div class="dash-value" style="font-size:19px">${formatValor(valorTotal)}</div><div class="dash-sub">todas as propostas</div></div>
+      <div class="dash-card accent-vermelho"><div class="dash-label">Concedidas</div><div class="dash-value">${concedidas}</div></div>`
   }
 
   // Gráfico de distribuição por etapa
