@@ -144,6 +144,33 @@
 
   /* RESPONSAVEL COLOR */
   select.resp-select option { background: #fff; color: #000; }
+
+  /* DASHBOARD */
+  .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 18px; }
+  .dash-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); position: relative; overflow: hidden; }
+  .dash-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent, #003366); }
+  .dash-card .dash-label { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .dash-card .dash-value { font-size: 26px; font-weight: 700; color: #1a1a2e; line-height: 1.1; }
+  .dash-card .dash-sub { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+  .dash-card.accent-azul { --accent: #003366; }
+  .dash-card.accent-verde { --accent: #16a34a; }
+  .dash-card.accent-dourado { --accent: #d4a017; }
+  .dash-card.accent-vermelho { --accent: #dc2626; }
+  .dash-card.accent-roxo { --accent: #7c3aed; }
+
+  .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .dash-title { font-size: 15px; font-weight: 700; color: #003366; display: flex; align-items: center; gap: 8px; }
+  .dash-context { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: #eff6ff; color: #1e40af; }
+
+  /* GRÁFICO DE ETAPAS */
+  .etapa-chart { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .etapa-chart-title { font-size: 13px; font-weight: 700; color: #003366; margin-bottom: 14px; }
+  .etapa-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .etapa-bar-label { font-size: 12px; color: #374151; min-width: 180px; text-align: right; font-weight: 500; }
+  .etapa-bar-track { flex: 1; height: 22px; background: #f3f4f6; border-radius: 6px; overflow: hidden; position: relative; }
+  .etapa-bar-fill { height: 100%; border-radius: 6px; transition: width .4s ease; min-width: 2px; }
+  .etapa-bar-count { font-size: 12px; font-weight: 700; color: #1a1a2e; min-width: 60px; }
+  .etapa-bar-count small { font-weight: 400; color: #9ca3af; }
   .btn-trocar { background: rgba(0,0,0,0.12); border: none; border-radius: 4px; padding: 2px 7px; cursor: pointer; font-size: 13px; color: inherit; transition: background .15s; vertical-align: middle; }
   .btn-trocar:hover { background: rgba(0,0,0,0.25); }
   .trocar-select { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 600; border: 1px solid rgba(0,0,0,0.2); border-radius: 4px; padding: 3px 6px; cursor: pointer; background: #fff; color: #1a1a2e; margin-left: 4px; }
@@ -674,7 +701,6 @@ function renderPropostas() {
   document.getElementById('view-propostas').innerHTML = `
   <div class="card">
     <div class="card-title">📋 Propostas</div>
-    <div id="stats-propostas" class="stats-grid" style="margin-bottom:16px"></div>
     <div class="filtros-row">
       <button class="filtro-btn active" id="filtro-TODOS" style="background:#003366;color:#fff;border-color:#003366" onclick="setFiltroColab('TODOS')">Todos</button>
       ${['ANDRESSA','ANNA','CAUÃ','CONRADO','JULIANO','LETICIA','MARCOS','PEDRO','RAIANE'].map(c => {
@@ -693,6 +719,7 @@ function renderPropostas() {
       <input type="text" class="search-input" placeholder="🔍 Buscar por código ou etapa..." oninput="setSearch(this.value)" value="${filtroSearch}"/>
       <button class="btn btn-secondary btn-sm" onclick="carregarPropostas()">↺ Atualizar</button>
     </div>
+    <div id="dashboard-propostas"></div>
     <div id="tabela-propostas">
       <div class="empty"><div class="empty-icon">⏳</div><p>Carregando propostas...</p></div>
     </div>
@@ -710,19 +737,113 @@ async function carregarPropostas() {
   }
 }
 
+// Retorna as linhas conforme o filtro de colaborador ativo (sem aplicar busca)
+function getLinhasFiltradas() {
+  const etapasFinalizadas = ['concedido','excluído','excluido','recusado']
+  let rows = [...todasPropostas]
+  if (filtroColab === 'NOVAS') {
+    rows = rows.filter(p => {
+      const resp = (p.responsavel||'N/A').toUpperCase().trim()
+      const etapa = (p.etapa||'').toLowerCase().trim()
+      return resp === 'N/A' && !etapasFinalizadas.includes(etapa)
+    })
+  } else if (filtroColab === 'TODOS') {
+    rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() !== 'N/A')
+  } else {
+    rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === filtroColab)
+  }
+  return rows
+}
+
+function valorNum(p) {
+  if (typeof p.valor === 'number') return p.valor
+  const n = parseFloat(String(p.valor||'0').replace(/[^0-9.,]/g,'').replace(/\.(?=\d{3})/g,'').replace(',','.'))
+  return isNaN(n) ? 0 : n
+}
+
 function renderStatsPropostas() {
-  const el = document.getElementById('stats-propostas')
+  const el = document.getElementById('dashboard-propostas')
   if (!el) return
-  const total = todasPropostas.length
-  const naAtrib = todasPropostas.filter(p => !p.responsavel || p.responsavel === 'N/A').length
-  const totalValor = todasPropostas.reduce((s,p) => {
-    const v = typeof p.valor === 'number' ? p.valor : parseFloat(String(p.valor||'0').replace(/[^0-9.,]/g,'').replace(',','.')) || 0
-    return s + v
-  }, 0)
+
+  const etapasFinalizadas = ['concedido','excluído','excluido','recusado']
+  const linhas = getLinhasFiltradas()
+
+  // Contexto do filtro
+  let contexto = 'Visão geral — todos os responsáveis'
+  if (filtroColab === 'NOVAS') contexto = 'Propostas novas sem atribuição'
+  else if (filtroColab === 'N/A') contexto = 'Propostas sem responsável'
+  else if (filtroColab !== 'TODOS') contexto = `Responsável: ${filtroColab}`
+
+  // Métricas
+  const total = linhas.length
+  const ativas = linhas.filter(p => !etapasFinalizadas.includes((p.etapa||'').toLowerCase().trim()))
+  const totalAtivas = ativas.length
+  const valorAtivo = ativas.reduce((s,p) => s + valorNum(p), 0)
+  const valorTotal = linhas.reduce((s,p) => s + valorNum(p), 0)
+  const concedidas = linhas.filter(p => (p.etapa||'').toLowerCase().trim() === 'concedido').length
+  const naAtrib = linhas.filter(p => !p.responsavel || p.responsavel === 'N/A').length
+
+  // Cards conforme o contexto
+  let cards = ''
+  if (filtroColab === 'TODOS' || filtroColab === 'N/A' || filtroColab === 'NOVAS') {
+    cards = `
+      <div class="dash-card accent-azul"><div class="dash-label">Total de Propostas</div><div class="dash-value">${total}</div></div>
+      <div class="dash-card accent-verde"><div class="dash-label">Propostas Ativas</div><div class="dash-value">${totalAtivas}</div><div class="dash-sub">em andamento</div></div>
+      <div class="dash-card accent-dourado"><div class="dash-label">Valor em Tratativa</div><div class="dash-value" style="font-size:19px">${formatValor(valorAtivo)}</div><div class="dash-sub">propostas ativas</div></div>
+      <div class="dash-card accent-roxo"><div class="dash-label">Valor Total</div><div class="dash-value" style="font-size:19px">${formatValor(valorTotal)}</div></div>`
+    if (filtroColab === 'TODOS') {
+      cards += `<div class="dash-card accent-vermelho"><div class="dash-label">Sem Atribuir</div><div class="dash-value">${naAtrib}</div></div>`
+    }
+  } else {
+    // Filtro por colaborador específico — foco nas propostas ATIVAS dele
+    cards = `
+      <div class="dash-card accent-azul"><div class="dash-label">Propostas de ${filtroColab}</div><div class="dash-value">${total}</div></div>
+      <div class="dash-card accent-verde"><div class="dash-label">Ativas</div><div class="dash-value">${totalAtivas}</div><div class="dash-sub">em tratativa agora</div></div>
+      <div class="dash-card accent-dourado"><div class="dash-label">Valor em Tratativa</div><div class="dash-value" style="font-size:19px">${formatValor(valorAtivo)}</div><div class="dash-sub">só propostas ativas</div></div>
+      <div class="dash-card accent-roxo"><div class="dash-label">Concedidas</div><div class="dash-value">${concedidas}</div></div>`
+  }
+
+  // Gráfico de distribuição por etapa
+  const etapaCount = {}
+  linhas.forEach(p => {
+    const e = (p.etapa||'—').trim() || '—'
+    etapaCount[e] = (etapaCount[e]||0) + 1
+  })
+  const etapasOrd = Object.entries(etapaCount).sort((a,b) => b[1]-a[1])
+  const maxCount = etapasOrd.length ? etapasOrd[0][1] : 1
+
+  const corEtapa = (etapa) => {
+    const e = etapa.toLowerCase()
+    if (e === 'concedido') return '#16a34a'
+    if (e === 'excluído' || e === 'excluido') return '#dc2626'
+    if (e === 'recusado') return '#d97706'
+    return '#3b82f6'
+  }
+
+  let grafico = ''
+  if (total > 0) {
+    grafico = `
+    <div class="etapa-chart">
+      <div class="etapa-chart-title">📊 Distribuição por Etapa</div>
+      ${etapasOrd.map(([etapa, count]) => {
+        const pct = Math.round((count/maxCount)*100)
+        const pctTotal = Math.round((count/total)*100)
+        return `<div class="etapa-bar-row">
+          <div class="etapa-bar-label">${etapa}</div>
+          <div class="etapa-bar-track"><div class="etapa-bar-fill" style="width:${pct}%;background:${corEtapa(etapa)}"></div></div>
+          <div class="etapa-bar-count">${count} <small>(${pctTotal}%)</small></div>
+        </div>`
+      }).join('')}
+    </div>`
+  }
+
   el.innerHTML = `
-    <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${total}</div></div>
-    <div class="stat-card"><div class="stat-label">Propostas Antigas</div><div class="stat-value" style="color:${naAtrib>0?'#92400e':'#166534'}">${naAtrib}</div></div>
-    <div class="stat-card"><div class="stat-label">Valor Total</div><div class="stat-value" style="font-size:15px">${formatValor(totalValor)}</div></div>`
+    <div class="dash-header">
+      <div class="dash-title">📈 Painel de Indicadores</div>
+      <div class="dash-context">${contexto}</div>
+    </div>
+    <div class="dash-grid">${cards}</div>
+    ${grafico}`
 }
 
 function setFiltroColab(c) {
@@ -734,6 +855,7 @@ function setFiltroColab(c) {
     if (c === 'NOVAS') btn.style.borderColor = '#003366'
   }
   renderTabelaPropostas()
+  renderStatsPropostas()
 }
 
 function setSearch(v) { filtroSearch = v; renderTabelaPropostas() }
