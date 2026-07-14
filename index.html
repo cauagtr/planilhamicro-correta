@@ -124,6 +124,17 @@
   .btn-trocar-v2:hover { background: #eef2ff; color: var(--azul); }
   tr:hover .btn-trocar-v2 { color: #6b7280; }
 
+  /* Alerta de proposta parada (Fase 2) */
+  .data-parada { display: flex; align-items: center; gap: 8px; }
+  .parada-icon { font-size: 15px; flex-shrink: 0; }
+  .data-parada-info { display: flex; flex-direction: column; gap: 1px; }
+  .data-parada-txt { font-size: 12px; color: #991b1b; font-weight: 600; }
+  .parada-badge { font-size: 10px; font-weight: 700; color: #991b1b; background: #fee2e2; padding: 1px 7px; border-radius: 10px; width: fit-content; border: 1px solid #fca5a5; }
+  .data-normal { font-size: 12px; }
+  .dias-sutil { font-size: 11px; color: #9ca3af; }
+  tbody tr.linha-parada { background: #fef6f6; }
+  tbody tr.linha-parada:hover { background: #fdeeee; }
+
   /* Indicador de observação */
   .obs-indicator { display: inline-flex; align-items: center; gap: 4px; }
   .obs-dot { width: 6px; height: 6px; border-radius: 50%; background: #16a34a; display: inline-block; }
@@ -182,6 +193,7 @@
   .dash-card.accent-verde { --accent: #16a34a; }
   .dash-card.accent-dourado { --accent: #d4a017; }
   .dash-card.accent-vermelho { --accent: #dc2626; }
+  .dash-card.accent-parada { --accent: #ea580c; background: #fff7ed; }
   .dash-card.accent-roxo { --accent: #7c3aed; }
 
   .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
@@ -360,6 +372,48 @@ function formatData(v) {
     return `${d}/${m}/${y}`
   }
   return v
+}
+
+// Calcula há quantos dias a proposta está na etapa atual
+function diasParados(v) {
+  if (!v) return null
+  let d
+  if (typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}/)) {
+    const [y,m,dia] = v.split('T')[0].split('-')
+    d = new Date(Number(y), Number(m)-1, Number(dia))
+  } else {
+    d = parseData(v)
+  }
+  if (!d || isNaN(d.getTime())) return null
+  const hoje = new Date()
+  hoje.setHours(0,0,0,0)
+  d.setHours(0,0,0,0)
+  const diff = Math.floor((hoje - d) / (1000*60*60*24))
+  return diff >= 0 ? diff : null
+}
+
+const DIAS_LIMITE_PARADA = 15
+
+// Renderiza a célula de data com alerta se estiver parada há muito tempo (só para ativas)
+function celulaData(p) {
+  const etapasFinalizadas = ['concedido','excluído','excluido','recusado']
+  const ativa = !etapasFinalizadas.includes((p.etapa||'').toLowerCase().trim())
+  const dias = diasParados(p.na_etapa_desde)
+  const dataFmt = formatData(p.na_etapa_desde)
+
+  if (ativa && dias !== null && dias >= DIAS_LIMITE_PARADA) {
+    return `<td><div class="data-parada">
+      <span class="parada-icon" title="Parada há ${dias} dias">⚠️</span>
+      <div class="data-parada-info">
+        <span class="data-parada-txt">${dataFmt}</span>
+        <span class="parada-badge">${dias} dias parada</span>
+      </div>
+    </div></td>`
+  }
+  if (ativa && dias !== null) {
+    return `<td><span class="data-normal">${dataFmt}</span> <span class="dias-sutil">(${dias}d)</span></td>`
+  }
+  return `<td>${dataFmt}</td>`
 }
 
 function parseData(val) {
@@ -829,6 +883,11 @@ function renderStatsPropostas() {
   const valorTotal = linhas.reduce((s,p) => s + valorNum(p), 0)
   const concedidas = linhas.filter(p => (p.etapa||'').toLowerCase().trim() === 'concedido').length
   const naAtrib = linhas.filter(p => !p.responsavel || p.responsavel === 'N/A').length
+  // Propostas ativas paradas há 15+ dias
+  const paradas = ativas.filter(p => {
+    const d = diasParados(p.na_etapa_desde)
+    return d !== null && d >= DIAS_LIMITE_PARADA
+  }).length
 
   // Cards conforme o contexto
   let cards = ''
@@ -841,6 +900,7 @@ function renderStatsPropostas() {
     if (filtroColab === 'TODOS') {
       cards += `<div class="dash-card accent-vermelho"><div class="dash-label">Sem Atribuir</div><div class="dash-value">${naAtrib}</div></div>`
     }
+    cards += `<div class="dash-card accent-parada"><div class="dash-label">⚠️ Paradas 15+ dias</div><div class="dash-value" style="color:${paradas>0?'#dc2626':'#16a34a'}">${paradas}</div><div class="dash-sub">propostas ativas</div></div>`
   } else {
     // Filtro por colaborador específico — foco nas propostas ATIVAS dele
     cards = `
@@ -848,7 +908,8 @@ function renderStatsPropostas() {
       <div class="dash-card accent-verde"><div class="dash-label">Ativas</div><div class="dash-value">${totalAtivas}</div><div class="dash-sub">em tratativa agora</div></div>
       <div class="dash-card accent-dourado"><div class="dash-label">Valor em Tratativa</div><div class="dash-value" style="font-size:19px">${formatValor(valorAtivo)}</div><div class="dash-sub">só propostas ativas</div></div>
       <div class="dash-card accent-roxo"><div class="dash-label">Valor Total</div><div class="dash-value" style="font-size:19px">${formatValor(valorTotal)}</div><div class="dash-sub">todas as propostas</div></div>
-      <div class="dash-card accent-vermelho"><div class="dash-label">Concedidas</div><div class="dash-value">${concedidas}</div></div>`
+      <div class="dash-card accent-vermelho"><div class="dash-label">Concedidas</div><div class="dash-value">${concedidas}</div></div>
+      <div class="dash-card accent-parada"><div class="dash-label">⚠️ Paradas 15+ dias</div><div class="dash-value" style="color:${paradas>0?'#dc2626':'#16a34a'}">${paradas}</div><div class="dash-sub">precisam de atenção</div></div>`
   }
 
   // Gráfico de distribuição por etapa
@@ -991,12 +1052,17 @@ function renderTabelaPropostas() {
            + Adicionar
          </button></td>`
 
-    return `<tr data-codigo="${p.codigo}">
+    const etapasFin = ['concedido','excluído','excluido','recusado']
+    const ehAtiva = !etapasFin.includes((p.etapa||'').toLowerCase().trim())
+    const dias = diasParados(p.na_etapa_desde)
+    const paradaClass = (ehAtiva && dias !== null && dias >= DIAS_LIMITE_PARADA) ? ' class="linha-parada"' : ''
+
+    return `<tr${paradaClass} data-codigo="${p.codigo}">
       ${respCell}
       <td class="td-cnpj" style="font-weight:700">${p.codigo||'—'}</td>
       <td class="td-etapa">${etapaBadge(p.etapa)}</td>
       <td class="td-valor">${formatValor(p.valor)}</td>
-      <td>${formatData(p.na_etapa_desde)}</td>
+      ${celulaData(p)}
       ${obsCell}
     </tr>`
   }).join('')
