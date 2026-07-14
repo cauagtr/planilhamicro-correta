@@ -310,10 +310,20 @@ function formatCNPJ(v) {
   return v
 }
 
+// Corrige valores que vieram divididos por 1000 de processamentos antigos.
+// Regra: se o valor for 81 ou menos (e maior que zero), multiplica por 1000.
+// Ex: 20 -> 20.000 ; 6 -> 6.000 ; 66,55 -> 66.550 ; 81 -> 81.000 ; 76352 fica como está.
+function corrigirValor(n) {
+  if (n === null || n === undefined || isNaN(n)) return n
+  if (n > 0 && n <= 81) return n * 1000
+  return n
+}
+
 function formatValor(v) {
   if (v === null || v === undefined || v === '') return '—'
-  const n = typeof v === 'number' ? v : parseFloat(String(v).replace(/\./g,'').replace(',','.'))
+  let n = typeof v === 'number' ? v : parseFloat(String(v).replace(/\./g,'').replace(',','.'))
   if (isNaN(n)) return String(v)
+  n = corrigirValor(n)
   return n.toLocaleString('pt-BR', { style:'currency', currency:'BRL', minimumFractionDigits:2 })
 }
 
@@ -756,9 +766,11 @@ function getLinhasFiltradas() {
 }
 
 function valorNum(p) {
-  if (typeof p.valor === 'number') return p.valor
-  const n = parseFloat(String(p.valor||'0').replace(/[^0-9.,]/g,'').replace(/\.(?=\d{3})/g,'').replace(',','.'))
-  return isNaN(n) ? 0 : n
+  let n
+  if (typeof p.valor === 'number') n = p.valor
+  else n = parseFloat(String(p.valor||'0').replace(/[^0-9.,]/g,'').replace(/\.(?=\d{3})/g,'').replace(',','.'))
+  if (isNaN(n)) return 0
+  return corrigirValor(n)
 }
 
 function renderStatsPropostas() {
@@ -776,6 +788,7 @@ function renderStatsPropostas() {
 
   // Métricas
   const total = linhas.length
+  // Propostas em tratativa = ativas: exclui concedido, excluído e RECUSADO
   const ativas = linhas.filter(p => !etapasFinalizadas.includes((p.etapa||'').toLowerCase().trim()))
   const totalAtivas = ativas.length
   const valorAtivo = ativas.reduce((s,p) => s + valorNum(p), 0)
