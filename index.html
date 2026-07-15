@@ -109,7 +109,7 @@
   .etapa-default .etapa-dot { background: #0284c7; }
 
   /* ── TABELA REDESENHADA (Fase 1) ── */
-  .table-wrap { max-height: 620px; overflow-y: auto; overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  .table-wrap { max-height: 640px; overflow-y: auto; overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
   thead th { position: sticky; top: 0; z-index: 10; background: #f1f5f9; box-shadow: 0 2px 0 rgba(0,0,0,0.06); }
   tbody tr { background: #fff; transition: background .12s; }
   tbody tr:nth-child(even) { background: #fafbfc; }
@@ -124,6 +124,44 @@
   .btn-trocar-v2 { background: transparent; border: none; border-radius: 5px; padding: 3px 6px; cursor: pointer; font-size: 12px; color: #9ca3af; transition: all .15s; }
   .btn-trocar-v2:hover { background: #eef2ff; color: var(--azul); }
   tr:hover .btn-trocar-v2 { color: #6b7280; }
+
+  /* ══ PAGINAÇÃO + LOTE + VALIDAÇÃO (Fase 6) ══ */
+  .pag-wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px 0; flex-wrap: wrap; }
+  .pag-info { font-size: 12px; color: var(--text-muted); }
+  .pag-info b { color: var(--text); }
+  .pag-ctrl { display: flex; align-items: center; gap: 4px; }
+  .pag-btn { min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; transition: all .12s; }
+  .pag-btn:hover:not(:disabled) { border-color: var(--azul); background: #eef2ff; color: var(--azul); }
+  .pag-btn:disabled { opacity: .35; cursor: not-allowed; }
+  .pag-btn.ativo { background: var(--azul); border-color: var(--azul); color: #fff; }
+  .pag-dots { color: var(--text-muted); padding: 0 2px; font-size: 12px; }
+  .pag-size { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 12px; background: #fff; cursor: pointer; }
+
+  /* Seleção em lote */
+  .check-col { width: 36px; text-align: center; }
+  .row-check { width: 15px; height: 15px; cursor: pointer; accent-color: #003366; }
+  tbody tr.selecionada { background: #eef2ff !important; }
+  tbody tr.selecionada:hover { background: #e0e7ff !important; }
+  .lote-bar { display: none; align-items: center; gap: 12px; background: var(--azul); color: #fff; padding: 10px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 3px 10px rgba(0,51,102,.25); animation: ddIn .15s ease; flex-wrap: wrap; }
+  .lote-bar.ativo { display: flex; }
+  .lote-count { font-size: 13px; font-weight: 700; }
+  .lote-count small { font-weight: 400; opacity: .8; }
+  .lote-acoes { display: flex; gap: 8px; margin-left: auto; align-items: center; flex-wrap: wrap; }
+  .btn-lote { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff; padding: 6px 12px; border-radius: 6px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .12s; }
+  .btn-lote:hover { background: rgba(255,255,255,.28); }
+  .btn-lote.primario { background: var(--dourado); border-color: var(--dourado); color: var(--azul); }
+  .btn-lote.primario:hover { background: #ffd633; }
+
+  /* Validação de arquivo */
+  .file-preview { margin-top: 10px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 10px 12px; text-align: left; animation: ddIn .15s ease; }
+  .file-preview.erro { background: #fee2e2; border-color: #fca5a5; }
+  .fp-linha { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: #166534; margin-bottom: 3px; }
+  .fp-linha:last-child { margin-bottom: 0; }
+  .file-preview.erro .fp-linha { color: #991b1b; }
+  .fp-icone { font-size: 12px; flex-shrink: 0; }
+  .fp-cols { font-size: 10.5px; color: #6b7280; margin-top: 5px; padding-top: 5px; border-top: 1px solid rgba(0,0,0,.06); line-height: 1.5; }
+  .fp-col-ok { color: #16a34a; font-weight: 600; }
+  .fp-col-faltando { color: #dc2626; font-weight: 600; }
 
   /* ══ FILTROS AVANÇADOS + EXPORT (Fase 5) ══ */
   .filtros-avancados { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; display: none; }
@@ -291,6 +329,44 @@
   .dd-option.selected { background: #eef2ff; }
   .dd-option-avatar { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; border: 1.5px solid rgba(0,0,0,0.08); }
   .dd-option .dd-check { margin-left: auto; color: var(--azul); font-size: 12px; }
+
+  /* ══ PAGINAÇÃO + LOTE + VALIDAÇÃO (Fase 6) ══ */
+  .pag-wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px 0; flex-wrap: wrap; }
+  .pag-info { font-size: 12px; color: var(--text-muted); }
+  .pag-info b { color: var(--text); }
+  .pag-ctrl { display: flex; align-items: center; gap: 4px; }
+  .pag-btn { min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; transition: all .12s; }
+  .pag-btn:hover:not(:disabled) { border-color: var(--azul); background: #eef2ff; color: var(--azul); }
+  .pag-btn:disabled { opacity: .35; cursor: not-allowed; }
+  .pag-btn.ativo { background: var(--azul); border-color: var(--azul); color: #fff; }
+  .pag-dots { color: var(--text-muted); padding: 0 2px; font-size: 12px; }
+  .pag-size { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 12px; background: #fff; cursor: pointer; }
+
+  /* Seleção em lote */
+  .check-col { width: 36px; text-align: center; }
+  .row-check { width: 15px; height: 15px; cursor: pointer; accent-color: #003366; }
+  tbody tr.selecionada { background: #eef2ff !important; }
+  tbody tr.selecionada:hover { background: #e0e7ff !important; }
+  .lote-bar { display: none; align-items: center; gap: 12px; background: var(--azul); color: #fff; padding: 10px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 3px 10px rgba(0,51,102,.25); animation: ddIn .15s ease; flex-wrap: wrap; }
+  .lote-bar.ativo { display: flex; }
+  .lote-count { font-size: 13px; font-weight: 700; }
+  .lote-count small { font-weight: 400; opacity: .8; }
+  .lote-acoes { display: flex; gap: 8px; margin-left: auto; align-items: center; flex-wrap: wrap; }
+  .btn-lote { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff; padding: 6px 12px; border-radius: 6px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .12s; }
+  .btn-lote:hover { background: rgba(255,255,255,.28); }
+  .btn-lote.primario { background: var(--dourado); border-color: var(--dourado); color: var(--azul); }
+  .btn-lote.primario:hover { background: #ffd633; }
+
+  /* Validação de arquivo */
+  .file-preview { margin-top: 10px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 10px 12px; text-align: left; animation: ddIn .15s ease; }
+  .file-preview.erro { background: #fee2e2; border-color: #fca5a5; }
+  .fp-linha { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: #166534; margin-bottom: 3px; }
+  .fp-linha:last-child { margin-bottom: 0; }
+  .file-preview.erro .fp-linha { color: #991b1b; }
+  .fp-icone { font-size: 12px; flex-shrink: 0; }
+  .fp-cols { font-size: 10.5px; color: #6b7280; margin-top: 5px; padding-top: 5px; border-top: 1px solid rgba(0,0,0,.06); line-height: 1.5; }
+  .fp-col-ok { color: #16a34a; font-weight: 600; }
+  .fp-col-faltando { color: #dc2626; font-weight: 600; }
 
   /* ══ FILTROS AVANÇADOS + EXPORT (Fase 5) ══ */
   .filtros-avancados { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; display: none; }
@@ -733,16 +809,94 @@ function handleFile(e, tipo) {
   if (file) processarArquivo(file, tipo)
 }
 
-function processarArquivo(file, tipo) {
+// Colunas obrigatórias que o sistema precisa encontrar na planilha
+const COLUNAS_NECESSARIAS = [
+  { nomes: ['Código da Operação','Codigo da Operação','Codigo da Operacao','Código da Operacao'], label: 'Código da Operação' },
+  { nomes: ['Etapa'], label: 'Etapa' },
+  { nomes: ['Valor Solicitado','Valor'], label: 'Valor Solicitado' },
+  { nomes: ['Na Etapa Desde','Na Etapa De'], label: 'Na Etapa Desde' },
+]
+
+// Colunas que NÃO devem estar presentes (dados pessoais)
+const COLUNAS_PROIBIDAS = [
+  { nomes: ['Nome do Cliente','Razão Social','Razao Social'], label: 'Nome do Cliente' },
+  { nomes: ['CPF/CNPJ','CNPJ','CPF'], label: 'CPF/CNPJ' },
+  { nomes: ['Email','E-mail'], label: 'Email' },
+]
+
+function achouColuna(cabecalhos, nomes) {
+  return nomes.some(n => cabecalhos.some(c => c.trim().toLowerCase() === n.toLowerCase()))
+}
+
+async function validarPlanilha(file) {
+  try {
+    const rows = await lerPlanilha(file)
+    if (!rows.length) return { ok: false, erro: 'A planilha está vazia (nenhuma linha de dados).' }
+
+    const cabecalhos = Object.keys(rows[0])
+    const faltando = COLUNAS_NECESSARIAS.filter(c => !achouColuna(cabecalhos, c.nomes)).map(c => c.label)
+    const proibidas = COLUNAS_PROIBIDAS.filter(c => achouColuna(cabecalhos, c.nomes)).map(c => c.label)
+    const encontradas = COLUNAS_NECESSARIAS.filter(c => achouColuna(cabecalhos, c.nomes)).map(c => c.label)
+
+    return {
+      ok: faltando.length === 0,
+      linhas: rows.length,
+      colunas: cabecalhos.length,
+      faltando, proibidas, encontradas,
+      erro: faltando.length ? `Coluna${faltando.length>1?'s':''} obrigatória${faltando.length>1?'s':''} não encontrada${faltando.length>1?'s':''}` : null
+    }
+  } catch(e) {
+    return { ok: false, erro: 'Não foi possível ler o arquivo: ' + e.message }
+  }
+}
+
+async function processarArquivo(file, tipo) {
   if (tipo === 'andamento') arquivoAndamento = file
   else arquivoFinalizados = file
+
   const nome = document.getElementById(`nome-${tipo}`)
   nome.textContent = '✔ ' + file.name
   document.getElementById(`drop-${tipo}`).classList.add('has-file')
+
+  // Preview de validação
+  const prevId = `preview-${tipo}`
+  let prev = document.getElementById(prevId)
+  if (!prev) {
+    prev = document.createElement('div')
+    prev.id = prevId
+    nome.parentElement.appendChild(prev)
+  }
+  prev.className = 'file-preview'
+  prev.innerHTML = `<div class="fp-linha"><span class="fp-icone">⏳</span> Lendo arquivo...</div>`
+
+  const v = await validarPlanilha(file)
+
+  if (!v.ok) {
+    prev.className = 'file-preview erro'
+    prev.innerHTML = `
+      <div class="fp-linha"><span class="fp-icone">❌</span> <b>${v.erro}</b></div>
+      ${v.faltando && v.faltando.length ? `<div class="fp-cols">Faltando: <span class="fp-col-faltando">${v.faltando.join(', ')}</span></div>` : ''}`
+    document.getElementById('btn-processar').disabled = true
+    return
+  }
+
+  prev.className = 'file-preview'
+  prev.innerHTML = `
+    <div class="fp-linha"><span class="fp-icone">✅</span> <b>${v.linhas}</b> linha${v.linhas!==1?'s':''} · <b>${v.colunas}</b> coluna${v.colunas!==1?'s':''}</div>
+    ${v.proibidas.length
+      ? `<div class="fp-linha" style="color:#92400e"><span class="fp-icone">⚠️</span> Contém dados pessoais: <b>${v.proibidas.join(', ')}</b> — remova antes de enviar</div>`
+      : `<div class="fp-linha"><span class="fp-icone">🔒</span> Sem dados pessoais — OK</div>`}
+    <div class="fp-cols">Colunas encontradas: <span class="fp-col-ok">${v.encontradas.join(', ')}</span></div>`
+
   if (arquivoAndamento && arquivoFinalizados) {
-    document.getElementById('btn-processar').disabled = false
-    document.getElementById('proc-status').className = 'alert alert-success'
-    document.getElementById('proc-status').textContent = '✅ Arquivos prontos. Clique em "Gerar Planilha de Hoje" para processar.'
+    const btn = document.getElementById('btn-processar')
+    const outroPrev = document.getElementById(`preview-${tipo === 'andamento' ? 'finalizados' : 'andamento'}`)
+    const outroOk = !outroPrev || !outroPrev.classList.contains('erro')
+    btn.disabled = !outroOk
+    if (outroOk) {
+      document.getElementById('proc-status').className = 'alert alert-success'
+      document.getElementById('proc-status').textContent = '✅ Arquivos validados. Clique em "Gerar Planilha de Hoje" para processar.'
+    }
   }
 }
 
@@ -944,6 +1098,9 @@ let filtroDataIni = ''
 let filtroDataFim = ''
 let filtroValorMin = ''
 let filtroValorMax = ''
+let pagAtual = 1
+let pagTamanho = 50
+let selecionadas = new Set()
 let sortCol = 'codigo'
 let sortDir = 1
 let modalCodigo = null
@@ -1109,6 +1266,7 @@ function atualizarBadgeFiltros() {
 }
 
 function aplicarFiltrosAvancados() {
+  pagAtual = 1
   filtroDataIni = document.getElementById('fa-data-ini')?.value || ''
   filtroDataFim = document.getElementById('fa-data-fim')?.value || ''
   filtroValorMin = document.getElementById('fa-valor-min')?.value || ''
@@ -1119,6 +1277,7 @@ function aplicarFiltrosAvancados() {
 }
 
 function limparFiltrosAvancados() {
+  pagAtual = 1
   filtroDataIni = ''; filtroDataFim = ''; filtroValorMin = ''; filtroValorMax = ''
   const ids = ['fa-data-ini','fa-data-fim','fa-valor-min','fa-valor-max']
   ids.forEach(id => { const e = document.getElementById(id); if (e) e.value = '' })
@@ -1232,6 +1391,7 @@ function renderStatsPropostas() {
 
 function setFiltroColab(c) {
   filtroColab = c
+  pagAtual = 1
   document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'))
   const btn = document.getElementById(`filtro-${c}`)
   if (btn) {
@@ -1243,16 +1403,17 @@ function setFiltroColab(c) {
   atualizarBadgeFiltros()
 }
 
-function setSearch(v) { filtroSearch = v; renderTabelaPropostas(); atualizarBadgeFiltros() }
+function setSearch(v) { filtroSearch = v; pagAtual = 1; renderTabelaPropostas(); atualizarBadgeFiltros() }
 
 function setSort(col) {
   if (sortCol === col) sortDir *= -1
   else { sortCol = col; sortDir = 1 }
+  pagAtual = 1
   renderTabelaPropostas()
 }
 
 function renderTabelaPropostas() {
-  const rows = getLinhasVisiveis()
+  const todasRows = getLinhasVisiveis()
 
   const cols = [
     {key:'responsavel', label:'Responsável'},
@@ -1263,18 +1424,31 @@ function renderTabelaPropostas() {
     {key:'observacao', label:'Observação'},
   ]
 
-  if (!rows.length) {
+  if (!todasRows.length) {
     document.getElementById('tabela-propostas').innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><p>Nenhuma proposta encontrada.</p></div>`
+    renderBarraLote()
     return
   }
 
-  const th = cols.map(c => {
-    const isSorted = sortCol === c.key
-    const icon = isSorted ? (sortDir===1?'↑':'↓') : '↕'
-    return `<th class="${isSorted?'sorted':''}" onclick="setSort('${c.key}')" style="${c.align?'text-align:'+c.align:''}">
-      ${c.label} <span class="sort-icon">${icon}</span>
-    </th>`
-  }).join('')
+  // ── Paginação ──
+  const totalPags = Math.max(1, Math.ceil(todasRows.length / pagTamanho))
+  if (pagAtual > totalPags) pagAtual = totalPags
+  if (pagAtual < 1) pagAtual = 1
+  const ini = (pagAtual - 1) * pagTamanho
+  const rows = todasRows.slice(ini, ini + pagTamanho)
+
+  // Códigos visíveis na página (para o "selecionar todos")
+  const codigosPagina = rows.map(p => String(p.codigo))
+  const todosSelecionados = codigosPagina.length > 0 && codigosPagina.every(c => selecionadas.has(c))
+
+  const th = `<th class="check-col"><input type="checkbox" class="row-check" ${todosSelecionados?'checked':''} onclick="toggleSelecionarPagina(this.checked)" title="Selecionar todos desta página"/></th>` +
+    cols.map(c => {
+      const isSorted = sortCol === c.key
+      const icon = isSorted ? (sortDir===1?'↑':'↓') : '↕'
+      return `<th class="${isSorted?'sorted':''}" onclick="setSort('${c.key}')" style="${c.align?'text-align:'+c.align:''}">
+        ${c.label} <span class="sort-icon">${icon}</span>
+      </th>`
+    }).join('')
 
   const trs = rows.map(p => {
     const resp = p.responsavel || 'N/A'
@@ -1311,7 +1485,12 @@ function renderTabelaPropostas() {
     const dias = diasParados(p.na_etapa_desde)
     const paradaClass = (ehAtiva && dias !== null && dias >= DIAS_LIMITE_PARADA) ? ' class="linha-parada"' : ''
 
-    return `<tr${paradaClass} data-codigo="${p.codigo}">
+    const estaSel = selecionadas.has(String(p.codigo))
+    const classes = [paradaClass.replace(' class="','').replace('"',''), estaSel ? 'selecionada' : ''].filter(Boolean).join(' ')
+    const trClass = classes ? ` class="${classes}"` : ''
+
+    return `<tr${trClass} data-codigo="${p.codigo}">
+      <td class="check-col"><input type="checkbox" class="row-check" ${estaSel?'checked':''} onclick="toggleSelecionada('${p.codigo}', this.checked)"/></td>
       ${respCell}
       <td class="td-cnpj" style="font-weight:700">${p.codigo||'—'}</td>
       <td class="td-etapa">${etapaBadge(p.etapa)}</td>
@@ -1321,14 +1500,75 @@ function renderTabelaPropostas() {
     </tr>`
   }).join('')
 
+  const fim = Math.min(ini + pagTamanho, todasRows.length)
+
   document.getElementById('tabela-propostas').innerHTML = `
-    <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${rows.length} proposta${rows.length!==1?'s':''} encontrada${rows.length!==1?'s':''}</div>
+    <div id="lote-bar-container"></div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${todasRows.length} proposta${todasRows.length!==1?'s':''} encontrada${todasRows.length!==1?'s':''}</div>
     <div class="table-wrap">
       <table>
         <thead><tr>${th}</tr></thead>
         <tbody>${trs}</tbody>
       </table>
+    </div>
+    ${renderPaginacao(todasRows.length, ini+1, fim, totalPags)}`
+
+  renderBarraLote()
+}
+
+// ── Paginação ──
+function renderPaginacao(total, de, ate, totalPags) {
+  if (total <= pagTamanho && pagTamanho !== 0) {
+    return `<div class="pag-wrap">
+      <div class="pag-info">Mostrando <b>${total}</b> proposta${total!==1?'s':''}</div>
+      <div class="pag-ctrl">
+        <span style="font-size:12px;color:var(--text-muted);margin-right:6px">Por página:</span>
+        <select class="pag-size" onchange="setPagTamanho(this.value)">
+          ${[25,50,100,200].map(n => `<option value="${n}" ${pagTamanho===n?'selected':''}>${n}</option>`).join('')}
+          <option value="0" ${pagTamanho===0?'selected':''}>Todas</option>
+        </select>
+      </div>
     </div>`
+  }
+
+  // Botões de página (com reticências quando há muitas)
+  let botoes = ''
+  const janela = 2
+  const pages = []
+  for (let i = 1; i <= totalPags; i++) {
+    if (i === 1 || i === totalPags || (i >= pagAtual-janela && i <= pagAtual+janela)) pages.push(i)
+    else if (pages[pages.length-1] !== '...') pages.push('...')
+  }
+  botoes = pages.map(p =>
+    p === '...' ? `<span class="pag-dots">···</span>`
+    : `<button class="pag-btn ${p===pagAtual?'ativo':''}" onclick="irPagina(${p})">${p}</button>`
+  ).join('')
+
+  return `<div class="pag-wrap">
+    <div class="pag-info">Mostrando <b>${de}–${ate}</b> de <b>${total}</b> propostas</div>
+    <div class="pag-ctrl">
+      <button class="pag-btn" onclick="irPagina(${pagAtual-1})" ${pagAtual<=1?'disabled':''}>‹</button>
+      ${botoes}
+      <button class="pag-btn" onclick="irPagina(${pagAtual+1})" ${pagAtual>=totalPags?'disabled':''}>›</button>
+      <select class="pag-size" style="margin-left:8px" onchange="setPagTamanho(this.value)">
+        ${[25,50,100,200].map(n => `<option value="${n}" ${pagTamanho===n?'selected':''}>${n}/pág</option>`).join('')}
+        <option value="0" ${pagTamanho===0?'selected':''}>Todas</option>
+      </select>
+    </div>
+  </div>`
+}
+
+function irPagina(n) {
+  pagAtual = n
+  renderTabelaPropostas()
+  document.querySelector('.table-wrap')?.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function setPagTamanho(v) {
+  const n = Number(v)
+  pagTamanho = n === 0 ? 999999 : n
+  pagAtual = 1
+  renderTabelaPropostas()
 }
 
 let dropdownAberto = null
@@ -1471,6 +1711,136 @@ async function salvarObservacao() {
   }
 }
 
+
+
+// ============================================================
+// AÇÕES EM LOTE (Fase 6)
+// ============================================================
+function toggleSelecionada(codigo, marcado) {
+  const c = String(codigo)
+  if (marcado) selecionadas.add(c)
+  else selecionadas.delete(c)
+  const tr = document.querySelector(`tr[data-codigo="${c}"]`)
+  if (tr) tr.classList.toggle('selecionada', marcado)
+  renderBarraLote()
+}
+
+function toggleSelecionarPagina(marcado) {
+  const todasRows = getLinhasVisiveis()
+  const ini = (pagAtual - 1) * pagTamanho
+  const rows = todasRows.slice(ini, ini + pagTamanho)
+  rows.forEach(p => {
+    const c = String(p.codigo)
+    if (marcado) selecionadas.add(c)
+    else selecionadas.delete(c)
+  })
+  renderTabelaPropostas()
+}
+
+function limparSelecao() {
+  selecionadas.clear()
+  renderTabelaPropostas()
+}
+
+function selecionarTodosFiltrados() {
+  getLinhasVisiveis().forEach(p => selecionadas.add(String(p.codigo)))
+  renderTabelaPropostas()
+  showToast(`${selecionadas.size} propostas selecionadas`)
+}
+
+function renderBarraLote() {
+  const cont = document.getElementById('lote-bar-container')
+  if (!cont) return
+  const n = selecionadas.size
+  if (n === 0) { cont.innerHTML = ''; return }
+
+  const totalFiltrado = getLinhasVisiveis().length
+  cont.innerHTML = `
+    <div class="lote-bar ativo">
+      <span class="lote-count">${n} selecionada${n!==1?'s':''} <small>de ${totalFiltrado} filtradas</small></span>
+      <div class="lote-acoes">
+        ${n < totalFiltrado ? `<button class="btn-lote" onclick="selecionarTodosFiltrados()">Selecionar todas as ${totalFiltrado}</button>` : ''}
+        <div class="dd-wrap">
+          <button class="btn-lote primario" onclick="abrirDropdownLote(this)">👤 Reatribuir para... ▼</button>
+        </div>
+        <button class="btn-lote" onclick="limparSelecao()">✕ Limpar</button>
+      </div>
+    </div>`
+}
+
+function abrirDropdownLote(anchor) {
+  if (dropdownAberto && dropdownAberto.dataset.lote === 'sim') { fecharDropdown(); return }
+  fecharDropdown()
+
+  const menu = document.createElement('div')
+  menu.className = 'dd-menu'
+  menu.dataset.lote = 'sim'
+  menu.style.right = '0'
+  menu.style.left = 'auto'
+  menu.innerHTML = COLAB_LIST.filter(c => c !== 'N/A').map(c => {
+    const cor = getCorColab(c)
+    const fgC = getTextColor(cor)
+    return `<div class="dd-option" onclick="reatribuirLote('${c}')">
+      <span class="dd-option-avatar" style="background:${cor};color:${fgC}">${getIniciais(c)}</span>
+      ${c}
+    </div>`
+  }).join('')
+
+  anchor.closest('.dd-wrap').appendChild(menu)
+  dropdownAberto = menu
+  setTimeout(() => document.addEventListener('click', handlerFecharFora, true), 0)
+}
+
+async function reatribuirLote(novoResp) {
+  fecharDropdown()
+  const codigos = [...selecionadas]
+  if (!codigos.length) return
+
+  if (!confirm(`Reatribuir ${codigos.length} proposta${codigos.length!==1?'s':''} para ${novoResp}?`)) return
+
+  const cont = document.getElementById('lote-bar-container')
+  if (cont) cont.innerHTML = `<div class="lote-bar ativo"><span class="lote-count"><span class="spinner"></span> Reatribuindo 0/${codigos.length}...</span></div>`
+
+  let ok = 0, erros = 0
+  try {
+    // 1. Atualiza cada proposta no banco
+    for (const codigo of codigos) {
+      try {
+        await sb(`propostas?codigo=eq.${encodeURIComponent(codigo)}`, {
+          method: 'PATCH', prefer: 'return=minimal',
+          body: { responsavel: novoResp, responsavel_final: novoResp }
+        })
+        const idx = todasPropostas.findIndex(p => String(p.codigo) === String(codigo))
+        if (idx !== -1) { todasPropostas[idx].responsavel = novoResp; todasPropostas[idx].responsavel_final = novoResp }
+        ok++
+        if (cont && ok % 3 === 0) cont.innerHTML = `<div class="lote-bar ativo"><span class="lote-count"><span class="spinner"></span> Reatribuindo ${ok}/${codigos.length}...</span></div>`
+      } catch(e) { erros++ }
+    }
+
+    // 2. Atualiza a referência (uma única vez, com todos os códigos)
+    const refs = await sb('planilha_referencia?select=id,dados&order=criado_em.desc&limit=1')
+    if (refs && refs[0]) {
+      const refId = refs[0].id
+      const dados = refs[0].dados || []
+      codigos.forEach(codigo => {
+        const i = dados.findIndex(r => String(r.codigo).trim() === String(codigo).trim())
+        if (i !== -1) dados[i].responsavel_final = novoResp
+        else dados.push({ codigo: String(codigo).trim(), responsavel_final: novoResp, observacao: '' })
+      })
+      await sb(`planilha_referencia?id=eq.${refId}`, {
+        method: 'PATCH', prefer: 'return=minimal', body: { dados }
+      })
+    }
+
+    selecionadas.clear()
+    renderTabelaPropostas()
+    renderStatsPropostas()
+    showToast(erros ? `✓ ${ok} reatribuídas, ${erros} com erro` : `✓ ${ok} propostas reatribuídas para ${novoResp}`, erros ? 'error' : 'success')
+  } catch(e) {
+    showToast('Erro ao reatribuir: ' + e.message, 'error')
+    renderTabelaPropostas()
+  }
+}
 
 // ============================================================
 // EXPORTAÇÃO (Fase 5)
@@ -1820,7 +2190,11 @@ function renderPainel() {
     <div class="card">
       <div class="dash-header">
         <div class="dash-title">📊 Painel Gerencial</div>
-        <button class="btn btn-secondary btn-sm" onclick="carregarPainel()">↺ Atualizar</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-secondary btn-sm" onclick="exportarPainelExcel()" title="Exportar indicadores para Excel">📊 Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportarPainelPDF()" title="Exportar relatório gerencial em PDF">📄 Relatório PDF</button>
+          <button class="btn btn-secondary btn-sm" onclick="carregarPainel()">↺ Atualizar</button>
+        </div>
       </div>
       ${resumo}
     </div>
