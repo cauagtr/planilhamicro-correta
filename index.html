@@ -125,6 +125,20 @@
   .btn-trocar-v2:hover { background: #eef2ff; color: var(--azul); }
   tr:hover .btn-trocar-v2 { color: #6b7280; }
 
+  /* ══ FILTROS AVANÇADOS + EXPORT (Fase 5) ══ */
+  .filtros-avancados { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; display: none; }
+  .filtros-avancados.aberto { display: block; animation: ddIn .15s ease; }
+  .fa-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; align-items: end; }
+  .fa-campo label { display: block; font-size: 11px; font-weight: 700; color: var(--azul); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 5px; }
+  .fa-inputs { display: flex; align-items: center; gap: 6px; }
+  .fa-input { flex: 1; min-width: 0; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 12.5px; background: #fff; }
+  .fa-input:focus { outline: none; border-color: var(--azul); box-shadow: 0 0 0 3px rgba(0,51,102,0.08); }
+  .fa-sep { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+  .fa-acoes { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .btn-filtro-toggle { position: relative; }
+  .filtro-badge-count { position: absolute; top: -5px; right: -5px; background: #dc2626; color: #fff; font-size: 9px; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .export-group { display: inline-flex; gap: 6px; }
+
   /* ══ PAINEL GERENCIAL (Fase 4) ══ */
   .painel-secao { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
   .painel-secao-titulo { font-size: 15px; font-weight: 700; color: #003366; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
@@ -277,6 +291,20 @@
   .dd-option.selected { background: #eef2ff; }
   .dd-option-avatar { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; border: 1.5px solid rgba(0,0,0,0.08); }
   .dd-option .dd-check { margin-left: auto; color: var(--azul); font-size: 12px; }
+
+  /* ══ FILTROS AVANÇADOS + EXPORT (Fase 5) ══ */
+  .filtros-avancados { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; display: none; }
+  .filtros-avancados.aberto { display: block; animation: ddIn .15s ease; }
+  .fa-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; align-items: end; }
+  .fa-campo label { display: block; font-size: 11px; font-weight: 700; color: var(--azul); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 5px; }
+  .fa-inputs { display: flex; align-items: center; gap: 6px; }
+  .fa-input { flex: 1; min-width: 0; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 12.5px; background: #fff; }
+  .fa-input:focus { outline: none; border-color: var(--azul); box-shadow: 0 0 0 3px rgba(0,51,102,0.08); }
+  .fa-sep { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+  .fa-acoes { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .btn-filtro-toggle { position: relative; }
+  .filtro-badge-count { position: absolute; top: -5px; right: -5px; background: #dc2626; color: #fff; font-size: 9px; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .export-group { display: inline-flex; gap: 6px; }
 
   /* ══ PAINEL GERENCIAL (Fase 4) ══ */
   .painel-secao { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
@@ -912,6 +940,10 @@ async function processarPlanilhas() {
 let todasPropostas = []
 let filtroColab = 'TODOS'
 let filtroSearch = ''
+let filtroDataIni = ''
+let filtroDataFim = ''
+let filtroValorMin = ''
+let filtroValorMax = ''
 let sortCol = 'codigo'
 let sortDir = 1
 let modalCodigo = null
@@ -936,8 +968,41 @@ function renderPropostas() {
     </div>
     <div class="filtros-row">
       <input type="text" class="search-input" placeholder="🔍 Buscar por código ou etapa..." oninput="setSearch(this.value)" value="${filtroSearch}"/>
+      <button class="btn btn-secondary btn-sm btn-filtro-toggle" id="btn-fa-toggle" onclick="toggleFiltrosAvancados()">
+        ⚙ Filtros <span id="fa-badge"></span>
+      </button>
+      <div class="export-group">
+        <button class="btn btn-secondary btn-sm" onclick="exportarExcel()" title="Exportar para Excel">📊 Excel</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportarPDF()" title="Exportar para PDF">📄 PDF</button>
+      </div>
       <button class="btn btn-secondary btn-sm" onclick="carregarPropostas()">↺ Atualizar</button>
     </div>
+
+    <div class="filtros-avancados" id="filtros-avancados">
+      <div class="fa-grid">
+        <div class="fa-campo">
+          <label>📅 Na Etapa Desde</label>
+          <div class="fa-inputs">
+            <input type="date" class="fa-input" id="fa-data-ini" value="${filtroDataIni}" onchange="aplicarFiltrosAvancados()"/>
+            <span class="fa-sep">até</span>
+            <input type="date" class="fa-input" id="fa-data-fim" value="${filtroDataFim}" onchange="aplicarFiltrosAvancados()"/>
+          </div>
+        </div>
+        <div class="fa-campo">
+          <label>💰 Faixa de Valor (R$)</label>
+          <div class="fa-inputs">
+            <input type="number" class="fa-input" id="fa-valor-min" placeholder="Mínimo" value="${filtroValorMin}" oninput="aplicarFiltrosAvancados()"/>
+            <span class="fa-sep">até</span>
+            <input type="number" class="fa-input" id="fa-valor-max" placeholder="Máximo" value="${filtroValorMax}" oninput="aplicarFiltrosAvancados()"/>
+          </div>
+        </div>
+      </div>
+      <div class="fa-acoes">
+        <button class="btn btn-secondary btn-sm" onclick="limparFiltrosAvancados()">✕ Limpar filtros</button>
+        <span style="font-size:12px;color:var(--text-muted);align-self:center" id="fa-info"></span>
+      </div>
+    </div>
+
     <div id="dashboard-propostas"></div>
     <div id="tabela-propostas">
       <div class="empty"><div class="empty-icon">⏳</div><p>Carregando propostas...</p></div>
@@ -951,12 +1016,36 @@ async function carregarPropostas() {
     todasPropostas = data || []
     renderTabelaPropostas()
     renderStatsPropostas()
+    atualizarBadgeFiltros()
   } catch(e) {
     document.getElementById('tabela-propostas').innerHTML = `<div class="alert alert-danger">❌ Erro ao carregar: ${e.message}</div>`
   }
 }
 
-// Retorna as linhas conforme o filtro de colaborador ativo (sem aplicar busca)
+// Aplica os filtros avançados (período e faixa de valor)
+function aplicarFiltrosData(rows) {
+  if (filtroDataIni) {
+    rows = rows.filter(p => {
+      if (!p.na_etapa_desde) return false
+      return String(p.na_etapa_desde).split('T')[0] >= filtroDataIni
+    })
+  }
+  if (filtroDataFim) {
+    rows = rows.filter(p => {
+      if (!p.na_etapa_desde) return false
+      return String(p.na_etapa_desde).split('T')[0] <= filtroDataFim
+    })
+  }
+  if (filtroValorMin !== '' && !isNaN(Number(filtroValorMin))) {
+    rows = rows.filter(p => valorNum(p) >= Number(filtroValorMin))
+  }
+  if (filtroValorMax !== '' && !isNaN(Number(filtroValorMax))) {
+    rows = rows.filter(p => valorNum(p) <= Number(filtroValorMax))
+  }
+  return rows
+}
+
+// Retorna as linhas conforme o filtro de colaborador ativo + filtros avançados (sem busca textual)
 function getLinhasFiltradas() {
   const etapasFinalizadas = ['concedido','excluído','excluido','recusado']
   let rows = [...todasPropostas]
@@ -971,7 +1060,72 @@ function getLinhasFiltradas() {
   } else {
     rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === filtroColab)
   }
+  return aplicarFiltrosData(rows)
+}
+
+// Retorna as linhas exatamente como exibidas na tabela (com busca e ordenação)
+function getLinhasVisiveis() {
+  let rows = getLinhasFiltradas()
+  if (filtroSearch.trim()) {
+    const q = filtroSearch.toLowerCase()
+    rows = rows.filter(p =>
+      String(p.codigo||'').toLowerCase().includes(q) ||
+      (p.etapa||'').toLowerCase().includes(q)
+    )
+  }
+  rows.sort((a,b) => {
+    let va = a[sortCol] ?? '', vb = b[sortCol] ?? ''
+    if (typeof va === 'number' && typeof vb === 'number') return (va-vb)*sortDir
+    return String(va).localeCompare(String(vb), 'pt-BR') * sortDir
+  })
   return rows
+}
+
+// ── Controle dos filtros avançados ──
+function toggleFiltrosAvancados() {
+  const el = document.getElementById('filtros-avancados')
+  el.classList.toggle('aberto')
+}
+
+function contarFiltrosAtivos() {
+  let n = 0
+  if (filtroDataIni) n++
+  if (filtroDataFim) n++
+  if (filtroValorMin !== '') n++
+  if (filtroValorMax !== '') n++
+  return n
+}
+
+function atualizarBadgeFiltros() {
+  const badge = document.getElementById('fa-badge')
+  const info = document.getElementById('fa-info')
+  if (!badge) return
+  const n = contarFiltrosAtivos()
+  badge.innerHTML = n > 0 ? `<span class="filtro-badge-count">${n}</span>` : ''
+  if (info) {
+    const visiveis = getLinhasVisiveis().length
+    info.textContent = n > 0 ? `${visiveis} proposta${visiveis!==1?'s':''} após filtros` : ''
+  }
+}
+
+function aplicarFiltrosAvancados() {
+  filtroDataIni = document.getElementById('fa-data-ini')?.value || ''
+  filtroDataFim = document.getElementById('fa-data-fim')?.value || ''
+  filtroValorMin = document.getElementById('fa-valor-min')?.value || ''
+  filtroValorMax = document.getElementById('fa-valor-max')?.value || ''
+  renderTabelaPropostas()
+  renderStatsPropostas()
+  atualizarBadgeFiltros()
+}
+
+function limparFiltrosAvancados() {
+  filtroDataIni = ''; filtroDataFim = ''; filtroValorMin = ''; filtroValorMax = ''
+  const ids = ['fa-data-ini','fa-data-fim','fa-valor-min','fa-valor-max']
+  ids.forEach(id => { const e = document.getElementById(id); if (e) e.value = '' })
+  renderTabelaPropostas()
+  renderStatsPropostas()
+  atualizarBadgeFiltros()
+  showToast('Filtros limpos')
 }
 
 function valorNum(p) {
@@ -1086,9 +1240,10 @@ function setFiltroColab(c) {
   }
   renderTabelaPropostas()
   renderStatsPropostas()
+  atualizarBadgeFiltros()
 }
 
-function setSearch(v) { filtroSearch = v; renderTabelaPropostas() }
+function setSearch(v) { filtroSearch = v; renderTabelaPropostas(); atualizarBadgeFiltros() }
 
 function setSort(col) {
   if (sortCol === col) sortDir *= -1
@@ -1097,31 +1252,7 @@ function setSort(col) {
 }
 
 function renderTabelaPropostas() {
-  let rows = [...todasPropostas]
-  const etapasFinalizadas = ['concedido','excluído','excluido','recusado']
-  if (filtroColab === 'NOVAS') {
-    rows = rows.filter(p => {
-      const resp = (p.responsavel||'N/A').toUpperCase().trim()
-      const etapa = (p.etapa||'').toLowerCase().trim()
-      return resp === 'N/A' && !etapasFinalizadas.includes(etapa)
-    })
-  } else if (filtroColab === 'TODOS') {
-    rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() !== 'N/A')
-  } else {
-    rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === filtroColab)
-  }
-  if (filtroSearch.trim()) {
-    const q = filtroSearch.toLowerCase()
-    rows = rows.filter(p =>
-      String(p.codigo||'').toLowerCase().includes(q) ||
-      (p.etapa||'').toLowerCase().includes(q)
-    )
-  }
-  rows.sort((a,b) => {
-    let va = a[sortCol] ?? '', vb = b[sortCol] ?? ''
-    if (typeof va === 'number' && typeof vb === 'number') return (va-vb)*sortDir
-    return String(va).localeCompare(String(vb), 'pt-BR') * sortDir
-  })
+  const rows = getLinhasVisiveis()
 
   const cols = [
     {key:'responsavel', label:'Responsável'},
@@ -1338,6 +1469,159 @@ async function salvarObservacao() {
   } finally {
     btn.disabled = false; btn.textContent = 'Salvar'
   }
+}
+
+
+// ============================================================
+// EXPORTAÇÃO (Fase 5)
+// ============================================================
+function nomeContextoFiltro() {
+  if (filtroColab === 'TODOS') return 'Todos os responsaveis'
+  if (filtroColab === 'NOVAS') return 'Propostas novas'
+  if (filtroColab === 'N/A') return 'Sem responsavel'
+  return filtroColab
+}
+
+function descricaoFiltros() {
+  const partes = []
+  partes.push(`Filtro: ${nomeContextoFiltro()}`)
+  if (filtroSearch.trim()) partes.push(`Busca: "${filtroSearch}"`)
+  if (filtroDataIni || filtroDataFim) {
+    partes.push(`Periodo: ${filtroDataIni ? formatData(filtroDataIni) : 'inicio'} ate ${filtroDataFim ? formatData(filtroDataFim) : 'hoje'}`)
+  }
+  if (filtroValorMin !== '' || filtroValorMax !== '') {
+    partes.push(`Valor: ${filtroValorMin !== '' ? formatValor(Number(filtroValorMin)) : 'R$ 0,00'} ate ${filtroValorMax !== '' ? formatValor(Number(filtroValorMax)) : 'sem limite'}`)
+  }
+  return partes.join('  |  ')
+}
+
+function exportarExcel() {
+  const rows = getLinhasVisiveis()
+  if (!rows.length) { showToast('Nenhuma proposta para exportar', 'error'); return }
+
+  const ETAPAS_FIN = ['concedido','excluído','excluido','recusado']
+  const dados = rows.map(p => {
+    const dias = diasParados(p.na_etapa_desde)
+    const ativa = !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim())
+    return {
+      'Responsável': p.responsavel || 'N/A',
+      'Código da Operação': p.codigo || '',
+      'Etapa': p.etapa || '',
+      'Valor (R$)': valorNum(p),
+      'Na Etapa Desde': formatData(p.na_etapa_desde),
+      'Dias na Etapa': dias !== null ? dias : '',
+      'Situação': ativa ? (dias !== null && dias >= DIAS_LIMITE_PARADA ? 'PARADA' : 'Em tratativa') : 'Finalizada',
+      'Observação': p.observacao || '',
+    }
+  })
+
+  const ws = XLSX.utils.json_to_sheet(dados)
+  ws['!cols'] = [ {wch:14},{wch:18},{wch:26},{wch:14},{wch:15},{wch:13},{wch:14},{wch:40} ]
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Propostas')
+
+  // Aba de resumo
+  const totalValor = rows.reduce((s,p) => s + valorNum(p), 0)
+  const ativas = rows.filter(p => !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim()))
+  const paradas = ativas.filter(p => { const d = diasParados(p.na_etapa_desde); return d !== null && d >= DIAS_LIMITE_PARADA })
+  const resumo = [
+    { Indicador: 'Data da exportação', Valor: new Date().toLocaleString('pt-BR') },
+    { Indicador: 'Filtro aplicado', Valor: nomeContextoFiltro() },
+    { Indicador: 'Total de propostas', Valor: rows.length },
+    { Indicador: 'Em tratativa (ativas)', Valor: ativas.length },
+    { Indicador: 'Paradas 15+ dias', Valor: paradas.length },
+    { Indicador: 'Valor total', Valor: totalValor },
+    { Indicador: 'Valor em tratativa', Valor: ativas.reduce((s,p) => s + valorNum(p), 0) },
+  ]
+  const wsR = XLSX.utils.json_to_sheet(resumo)
+  wsR['!cols'] = [ {wch:26},{wch:26} ]
+  XLSX.utils.book_append_sheet(wb, wsR, 'Resumo')
+
+  const hoje = new Date().toISOString().split('T')[0]
+  const nome = `Microcredito_${nomeContextoFiltro().replace(/[^a-zA-Z0-9]/g,'_')}_${hoje}.xlsx`
+  XLSX.writeFile(wb, nome)
+  showToast(`✓ ${rows.length} propostas exportadas`)
+}
+
+function exportarPDF() {
+  const rows = getLinhasVisiveis()
+  if (!rows.length) { showToast('Nenhuma proposta para exportar', 'error'); return }
+
+  const ETAPAS_FIN = ['concedido','excluído','excluido','recusado']
+  const ativas = rows.filter(p => !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim()))
+  const paradas = ativas.filter(p => { const d = diasParados(p.na_etapa_desde); return d !== null && d >= DIAS_LIMITE_PARADA })
+  const totalValor = rows.reduce((s,p) => s + valorNum(p), 0)
+  const valorAtivo = ativas.reduce((s,p) => s + valorNum(p), 0)
+
+  const linhas = rows.map(p => {
+    const dias = diasParados(p.na_etapa_desde)
+    const ativa = !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim())
+    const parada = ativa && dias !== null && dias >= DIAS_LIMITE_PARADA
+    return `<tr class="${parada ? 'parada' : ''}">
+      <td>${p.responsavel || 'N/A'}</td>
+      <td class="mono">${p.codigo || '—'}</td>
+      <td>${p.etapa || '—'}</td>
+      <td class="mono right">${formatValor(p.valor)}</td>
+      <td>${formatData(p.na_etapa_desde)}</td>
+      <td class="center">${dias !== null ? dias + 'd' : '—'}${parada ? ' ⚠' : ''}</td>
+    </tr>`
+  }).join('')
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+  <title>Relatório de Propostas — Fomento Paraná</title>
+  <style>
+    @page { size: A4 landscape; margin: 12mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; color: #1a1a2e; }
+    .hdr { background: #003366; color: #fff; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #F5C400; }
+    .hdr h1 { font-size: 15px; font-weight: 700; }
+    .hdr .sub { font-size: 10px; color: #cbd5e1; margin-top: 2px; }
+    .hdr .data { font-size: 9px; color: #94a3b8; text-align: right; }
+    .filtros { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 7px 12px; font-size: 9.5px; margin: 10px 0; border-radius: 4px; }
+    .cards { display: flex; gap: 8px; margin-bottom: 12px; }
+    .card { flex: 1; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px 10px; background: #f8fafc; }
+    .card .lbl { font-size: 8px; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: .3px; }
+    .card .val { font-size: 15px; font-weight: 700; color: #003366; margin-top: 2px; }
+    .card.alerta .val { color: #dc2626; }
+    table { width: 100%; border-collapse: collapse; font-size: 9px; }
+    thead th { background: #003366; color: #fff; padding: 6px 7px; text-align: left; font-size: 8.5px; text-transform: uppercase; letter-spacing: .3px; }
+    tbody td { padding: 5px 7px; border-bottom: 1px solid #eef0f3; }
+    tbody tr:nth-child(even) { background: #fafbfc; }
+    tbody tr.parada { background: #fef2f2; }
+    tbody tr.parada td { color: #991b1b; font-weight: 600; }
+    .mono { font-family: 'Consolas', monospace; }
+    .right { text-align: right; }
+    .center { text-align: center; }
+    .ft { margin-top: 12px; padding-top: 8px; border-top: 2px solid #F5C400; font-size: 8px; color: #9ca3af; text-align: center; }
+    @media print { .no-print { display: none; } }
+    .no-print { position: fixed; top: 10px; right: 10px; background: #003366; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+  </style></head><body>
+  <button class="no-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+  <div class="hdr">
+    <div><h1>FOMENTO PARANÁ — Sistema de Microcrédito</h1><div class="sub">Relatório de Propostas</div></div>
+    <div class="data">Gerado em<br><b>${new Date().toLocaleString('pt-BR')}</b></div>
+  </div>
+  <div class="filtros"><b>Filtros aplicados:</b> ${descricaoFiltros()}</div>
+  <div class="cards">
+    <div class="card"><div class="lbl">Total de Propostas</div><div class="val">${rows.length}</div></div>
+    <div class="card"><div class="lbl">Em Tratativa</div><div class="val">${ativas.length}</div></div>
+    <div class="card ${paradas.length ? 'alerta' : ''}"><div class="lbl">Paradas 15+ dias</div><div class="val">${paradas.length}</div></div>
+    <div class="card"><div class="lbl">Valor em Tratativa</div><div class="val" style="font-size:12px">${formatValor(valorAtivo)}</div></div>
+    <div class="card"><div class="lbl">Valor Total</div><div class="val" style="font-size:12px">${formatValor(totalValor)}</div></div>
+  </div>
+  <table>
+    <thead><tr><th>Responsável</th><th>Código</th><th>Etapa</th><th class="right">Valor</th><th>Na Etapa Desde</th><th class="center">Dias</th></tr></thead>
+    <tbody>${linhas}</tbody>
+  </table>
+  <div class="ft">Fomento Paraná — Documento interno  |  ${rows.length} proposta${rows.length!==1?'s':''} listada${rows.length!==1?'s':''}  |  ⚠ = parada há ${DIAS_LIMITE_PARADA}+ dias</div>
+  </body></html>`
+
+  const win = window.open('', '_blank')
+  if (!win) { showToast('Permita pop-ups para exportar o PDF', 'error'); return }
+  win.document.write(html)
+  win.document.close()
+  showToast(`✓ Relatório gerado — use "Imprimir / Salvar PDF"`)
 }
 
 // ============================================================
