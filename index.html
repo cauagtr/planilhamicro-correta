@@ -125,6 +125,60 @@
   .btn-trocar-v2:hover { background: #eef2ff; color: var(--azul); }
   tr:hover .btn-trocar-v2 { color: #6b7280; }
 
+  /* ══ PAINEL GERENCIAL (Fase 4) ══ */
+  .painel-secao { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .painel-secao-titulo { font-size: 15px; font-weight: 700; color: #003366; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .painel-secao-sub { font-size: 12px; color: #9ca3af; font-weight: 400; margin-left: auto; }
+
+  /* Funil */
+  .funil-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .funil-label { min-width: 200px; text-align: right; font-size: 12.5px; font-weight: 600; color: #374151; display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+  .funil-label .funil-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .funil-track { flex: 1; height: 30px; background: #f3f4f6; border-radius: 8px; overflow: hidden; position: relative; }
+  .funil-fill { height: 100%; border-radius: 8px; display: flex; align-items: center; padding-left: 12px; color: #fff; font-weight: 700; font-size: 13px; transition: width .5s ease; min-width: 40px; }
+  .funil-valor { min-width: 130px; font-size: 12px; color: #6b7280; }
+  .funil-valor strong { color: #1a1a2e; font-size: 13px; }
+
+  /* Carga por responsável */
+  .carga-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .carga-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; display: flex; align-items: center; gap: 12px; transition: box-shadow .15s; }
+  .carga-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
+  .carga-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; border: 2px solid rgba(0,0,0,0.06); }
+  .carga-info { flex: 1; min-width: 0; }
+  .carga-nome { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+  .carga-stats { font-size: 11.5px; color: #6b7280; margin-top: 2px; }
+  .carga-barra { height: 5px; background: #f3f4f6; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+  .carga-barra-fill { height: 100%; border-radius: 3px; }
+  .carga-num { font-size: 22px; font-weight: 700; color: #003366; }
+
+  /* Ranking de paradas */
+  .ranking-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; background: #fafbfc; border: 1px solid #eef0f3; }
+  .ranking-item.critico { background: #fef6f6; border-color: #fecaca; }
+  .ranking-pos { width: 26px; height: 26px; border-radius: 50%; background: #e5e7eb; color: #374151; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .ranking-item.critico .ranking-pos { background: #dc2626; color: #fff; }
+  .ranking-cod { font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 13px; color: #1a1a2e; }
+  .ranking-etapa { font-size: 11px; color: #6b7280; }
+  .ranking-resp { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .ranking-dias { font-size: 13px; font-weight: 700; color: #dc2626; white-space: nowrap; }
+  .ranking-avatar-sm { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; border: 1.5px solid rgba(0,0,0,0.08); }
+
+  /* Evolução (histórico) */
+  .evolucao-chart { display: flex; align-items: flex-end; gap: 10px; height: 160px; padding: 10px 0; border-bottom: 2px solid #e5e7eb; }
+  .evolucao-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .evolucao-bar { width: 100%; max-width: 44px; background: linear-gradient(180deg, #004A99, #003366); border-radius: 6px 6px 0 0; transition: height .5s ease; min-height: 4px; position: relative; }
+  .evolucao-bar:hover { background: linear-gradient(180deg, #F5C400, #d4a017); }
+  .evolucao-bar-num { font-size: 11px; font-weight: 700; color: #003366; }
+  .evolucao-bar-data { font-size: 10px; color: #9ca3af; text-align: center; white-space: nowrap; }
+  .painel-empty { text-align: center; padding: 30px; color: #9ca3af; font-size: 13px; }
+
+  /* KPIs topo do painel */
+  .painel-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 18px; }
+  .kpi-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 18px; position: relative; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--kpi-cor, #003366); }
+  .kpi-label { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+  .kpi-valor { font-size: 26px; font-weight: 700; color: #1a1a2e; margin-top: 6px; line-height: 1.1; }
+  .kpi-sub { font-size: 11px; color: #9ca3af; margin-top: 3px; }
+
   /* Alerta de proposta parada (Fase 2) */
   .data-parada { display: flex; align-items: center; gap: 8px; }
   .parada-icon { font-size: 15px; flex-shrink: 0; }
@@ -224,6 +278,52 @@
   .dd-option-avatar { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; border: 1.5px solid rgba(0,0,0,0.08); }
   .dd-option .dd-check { margin-left: auto; color: var(--azul); font-size: 12px; }
 
+  /* ══ PAINEL GERENCIAL (Fase 4) ══ */
+  .painel-secao { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .painel-secao-titulo { font-size: 14px; font-weight: 700; color: var(--azul); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .painel-secao-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+
+  /* Funil */
+  .funil-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .funil-row { display: flex; align-items: center; gap: 12px; }
+  .funil-label { font-size: 12px; font-weight: 600; color: #374151; min-width: 190px; text-align: right; }
+  .funil-bar-wrap { flex: 1; display: flex; align-items: center; gap: 10px; }
+  .funil-bar { height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-size: 12px; font-weight: 700; color: #fff; transition: width .5s ease; min-width: 34px; }
+  .funil-pct { font-size: 11px; color: #9ca3af; font-weight: 600; min-width: 42px; }
+  .funil-valor { font-size: 11px; color: #6b7280; font-family: 'IBM Plex Mono', monospace; min-width: 110px; text-align: right; }
+
+  /* Carga por responsável */
+  .carga-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .carga-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; display: flex; align-items: center; gap: 12px; position: relative; overflow: hidden; transition: transform .12s, box-shadow .12s; }
+  .carga-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .carga-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cor-colab); }
+  .carga-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; border: 2px solid rgba(0,0,0,0.06); }
+  .carga-info { flex: 1; min-width: 0; }
+  .carga-nome { font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .carga-nums { display: flex; gap: 10px; font-size: 11px; color: var(--text-muted); }
+  .carga-nums b { color: var(--text); font-size: 14px; }
+  .carga-alerta { font-size: 10px; font-weight: 700; color: #dc2626; background: #fee2e2; padding: 1px 6px; border-radius: 8px; margin-top: 3px; display: inline-block; }
+  .carga-valor { font-size: 11px; color: #6b7280; font-family: 'IBM Plex Mono', monospace; margin-top: 2px; }
+
+  /* Ranking de paradas */
+  .rank-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .rank-table th { background: #f8fafc; color: var(--azul); font-weight: 700; padding: 9px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; border-bottom: 2px solid var(--border); }
+  .rank-table td { padding: 9px 12px; border-bottom: 1px solid #eef0f3; }
+  .rank-table tr:hover { background: #fef6f6; }
+  .rank-pos { font-weight: 700; color: #9ca3af; width: 30px; }
+  .rank-dias { font-weight: 700; color: #991b1b; }
+  .rank-dias-badge { background: #fee2e2; padding: 2px 8px; border-radius: 10px; border: 1px solid #fca5a5; font-size: 11px; }
+
+  /* Evolução */
+  .evo-wrap { display: flex; align-items: flex-end; gap: 8px; height: 140px; padding: 0 4px; }
+  .evo-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .evo-bar { width: 100%; max-width: 44px; background: linear-gradient(180deg, #3b82f6, #1d4ed8); border-radius: 5px 5px 0 0; transition: height .4s ease; position: relative; min-height: 3px; }
+  .evo-bar:hover { filter: brightness(1.15); }
+  .evo-val { font-size: 10px; font-weight: 700; color: var(--azul); }
+  .evo-data { font-size: 9.5px; color: var(--text-muted); white-space: nowrap; }
+
+  .painel-empty { text-align: center; padding: 30px; color: var(--text-muted); font-size: 13px; }
+
   /* Feedback de salvamento inline */
   .salvo-flash { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #16a34a; animation: flashIn .2s ease; }
   @keyframes flashIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
@@ -258,12 +358,14 @@
 <nav>
   <button class="tab-btn active" onclick="setTab('processar')" id="tab-processar">⚙ Processar</button>
   <button class="tab-btn" onclick="setTab('propostas')" id="tab-propostas">📋 Propostas</button>
+  <button class="tab-btn" onclick="setTab('painel')" id="tab-painel">📊 Painel Gerencial</button>
   <button class="tab-btn" onclick="setTab('historico')" id="tab-historico">🕒 Histórico</button>
 </nav>
 
 <main id="main-content">
   <div id="view-processar"></div>
   <div id="view-propostas" style="display:none"></div>
+  <div id="view-painel" style="display:none"></div>
   <div id="view-historico" style="display:none"></div>
 </main>
 
@@ -524,8 +626,10 @@ function setTab(tab) {
   document.getElementById(`tab-${tab}`).classList.add('active')
   document.getElementById('view-processar').style.display = tab==='processar' ? '' : 'none'
   document.getElementById('view-propostas').style.display = tab==='propostas' ? '' : 'none'
+  document.getElementById('view-painel').style.display = tab==='painel' ? '' : 'none'
   document.getElementById('view-historico').style.display = tab==='historico' ? '' : 'none'
   if (tab === 'propostas') carregarPropostas()
+  if (tab === 'painel') carregarPainel()
   if (tab === 'historico') carregarHistorico()
 }
 
@@ -1234,6 +1338,212 @@ async function salvarObservacao() {
   } finally {
     btn.disabled = false; btn.textContent = 'Salvar'
   }
+}
+
+// ============================================================
+// ABA PAINEL GERENCIAL (Fase 4)
+// ============================================================
+let dadosPainel = { propostas: [], historico: [] }
+
+async function carregarPainel() {
+  const el = document.getElementById('view-painel')
+  el.innerHTML = `<div class="card"><div class="empty"><div class="empty-icon">⏳</div><p>Carregando painel...</p></div></div>`
+  try {
+    const [props, hist] = await Promise.all([
+      sb('propostas?select=*&limit=2000'),
+      sb('historico_processamentos?select=*&order=criado_em.desc&limit=12')
+    ])
+    dadosPainel.propostas = props || []
+    dadosPainel.historico = hist || []
+    renderPainel()
+  } catch(e) {
+    el.innerHTML = `<div class="card"><div class="alert alert-danger">❌ Erro ao carregar painel: ${e.message}</div></div>`
+  }
+}
+
+function renderPainel() {
+  const el = document.getElementById('view-painel')
+  const props = dadosPainel.propostas
+  const ETAPAS_FIN = ['concedido','excluído','excluido','recusado']
+
+  if (!props.length) {
+    el.innerHTML = `<div class="card"><div class="painel-empty">📭 Nenhuma proposta processada ainda.<br>Processe as planilhas na aba "⚙ Processar" para ver os indicadores.</div></div>`
+    return
+  }
+
+  const ativas = props.filter(p => !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim()))
+  const paradas = ativas.filter(p => { const d = diasParados(p.na_etapa_desde); return d !== null && d >= DIAS_LIMITE_PARADA })
+  const valorAtivo = ativas.reduce((s,p) => s + valorNum(p), 0)
+  const valorTotal = props.reduce((s,p) => s + valorNum(p), 0)
+  const concedidas = props.filter(p => (p.etapa||'').toLowerCase().trim() === 'concedido')
+  const valorConcedido = concedidas.reduce((s,p) => s + valorNum(p), 0)
+  const semResp = props.filter(p => !p.responsavel || p.responsavel === 'N/A').length
+
+  // ══ CARDS DE RESUMO ══
+  const resumo = `
+    <div class="dash-grid">
+      <div class="dash-card accent-azul"><div class="dash-label">Total de Propostas</div><div class="dash-value">${props.length}</div></div>
+      <div class="dash-card accent-verde"><div class="dash-label">Em Tratativa</div><div class="dash-value">${ativas.length}</div><div class="dash-sub">${formatValor(valorAtivo)}</div></div>
+      <div class="dash-card accent-roxo"><div class="dash-label">Concedidas</div><div class="dash-value">${concedidas.length}</div><div class="dash-sub">${formatValor(valorConcedido)}</div></div>
+      <div class="dash-card accent-parada"><div class="dash-label">⚠️ Paradas 15+ dias</div><div class="dash-value" style="color:${paradas.length>0?'#dc2626':'#16a34a'}">${paradas.length}</div><div class="dash-sub">precisam de atenção</div></div>
+      <div class="dash-card accent-vermelho"><div class="dash-label">Sem Responsável</div><div class="dash-value" style="color:${semResp>0?'#dc2626':'#16a34a'}">${semResp}</div></div>
+    </div>`
+
+  // ══ 4.2 FUNIL POR ETAPA ══
+  const etapaMap = {}
+  props.forEach(p => {
+    const e = (p.etapa||'—').trim() || '—'
+    if (!etapaMap[e]) etapaMap[e] = { count: 0, valor: 0 }
+    etapaMap[e].count++
+    etapaMap[e].valor += valorNum(p)
+  })
+  const etapasOrd = Object.entries(etapaMap).sort((a,b) => b[1].count - a[1].count)
+  const maxEtapa = etapasOrd.length ? etapasOrd[0][1].count : 1
+
+  const corEtapaFunil = (etapa) => {
+    const e = etapa.toLowerCase()
+    if (e === 'concedido') return '#16a34a'
+    if (e === 'excluído' || e === 'excluido') return '#dc2626'
+    if (e === 'recusado') return '#d97706'
+    return '#3b82f6'
+  }
+
+  const funil = `
+    <div class="painel-secao">
+      <div class="painel-secao-titulo">🔻 Funil de Propostas por Etapa</div>
+      <div class="painel-secao-sub">Distribuição de todas as propostas e o valor acumulado em cada etapa</div>
+      <div class="funil-wrap">
+        ${etapasOrd.map(([etapa, d]) => {
+          const pct = Math.round((d.count/maxEtapa)*100)
+          const pctTotal = ((d.count/props.length)*100).toFixed(1)
+          return `<div class="funil-row">
+            <div class="funil-label">${etapa}</div>
+            <div class="funil-bar-wrap">
+              <div class="funil-bar" style="width:${pct}%;background:${corEtapaFunil(etapa)}">${d.count}</div>
+              <div class="funil-pct">${pctTotal}%</div>
+            </div>
+            <div class="funil-valor">${formatValor(d.valor)}</div>
+          </div>`
+        }).join('')}
+      </div>
+    </div>`
+
+  // ══ 4.3 CARGA POR RESPONSÁVEL ══
+  const cargaMap = {}
+  props.forEach(p => {
+    const r = (p.responsavel || 'N/A').toUpperCase().trim()
+    if (!cargaMap[r]) cargaMap[r] = { total: 0, ativas: 0, paradas: 0, valorAtivo: 0 }
+    cargaMap[r].total++
+    const ehAtiva = !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim())
+    if (ehAtiva) {
+      cargaMap[r].ativas++
+      cargaMap[r].valorAtivo += valorNum(p)
+      const d = diasParados(p.na_etapa_desde)
+      if (d !== null && d >= DIAS_LIMITE_PARADA) cargaMap[r].paradas++
+    }
+  })
+  const cargaOrd = Object.entries(cargaMap)
+    .filter(([r]) => r !== 'N/A')
+    .sort((a,b) => b[1].ativas - a[1].ativas)
+
+  const carga = `
+    <div class="painel-secao">
+      <div class="painel-secao-titulo">👥 Carga de Trabalho por Responsável</div>
+      <div class="painel-secao-sub">Ordenado por propostas ativas (em tratativa)</div>
+      <div class="carga-grid">
+        ${cargaOrd.map(([nome, d]) => {
+          const cor = getCorColab(nome)
+          const fg = getTextColor(cor)
+          return `<div class="carga-card" style="--cor-colab:${cor}">
+            <span class="carga-avatar" style="background:${cor};color:${fg}">${getIniciais(nome)}</span>
+            <div class="carga-info">
+              <div class="carga-nome">${nome}</div>
+              <div class="carga-nums">
+                <span><b>${d.ativas}</b> ativas</span>
+                <span style="color:#9ca3af">de ${d.total} total</span>
+              </div>
+              <div class="carga-valor">${formatValor(d.valorAtivo)}</div>
+              ${d.paradas > 0 ? `<span class="carga-alerta">⚠️ ${d.paradas} parada${d.paradas>1?'s':''}</span>` : ''}
+            </div>
+          </div>`
+        }).join('')}
+      </div>
+    </div>`
+
+  // ══ 4.4 RANKING DE PROPOSTAS PARADAS ══
+  const rankParadas = ativas
+    .map(p => ({ ...p, dias: diasParados(p.na_etapa_desde) }))
+    .filter(p => p.dias !== null && p.dias >= DIAS_LIMITE_PARADA)
+    .sort((a,b) => b.dias - a.dias)
+    .slice(0, 15)
+
+  const ranking = `
+    <div class="painel-secao">
+      <div class="painel-secao-titulo">⏱️ Propostas Mais Paradas</div>
+      <div class="painel-secao-sub">Top ${rankParadas.length} propostas ativas há mais tempo na mesma etapa (15+ dias)</div>
+      ${rankParadas.length === 0
+        ? `<div class="painel-empty">✅ Nenhuma proposta parada há mais de ${DIAS_LIMITE_PARADA} dias. Tudo em dia!</div>`
+        : `<table class="rank-table">
+            <thead><tr>
+              <th>#</th><th>Responsável</th><th>Código</th><th>Etapa</th><th>Valor</th><th>Parada há</th>
+            </tr></thead>
+            <tbody>
+              ${rankParadas.map((p, i) => {
+                const cor = getCorColab(p.responsavel || 'N/A')
+                const fg = getTextColor(cor)
+                return `<tr>
+                  <td class="rank-pos">${i+1}</td>
+                  <td><span class="resp-avatar" style="background:${cor};color:${fg};width:24px;height:24px;font-size:9px">${getIniciais(p.responsavel||'N/A')}</span> <span style="font-size:12px;font-weight:600">${p.responsavel||'N/A'}</span></td>
+                  <td style="font-family:'IBM Plex Mono',monospace;font-weight:700">${p.codigo}</td>
+                  <td>${etapaBadge(p.etapa)}</td>
+                  <td style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">${formatValor(p.valor)}</td>
+                  <td class="rank-dias"><span class="rank-dias-badge">${p.dias} dias</span></td>
+                </tr>`
+              }).join('')}
+            </tbody>
+          </table>`
+      }
+    </div>`
+
+  // ══ 4.5 EVOLUÇÃO AO LONGO DO TEMPO ══
+  const hist = [...dadosPainel.historico].reverse()
+  const maxHist = hist.length ? Math.max(...hist.map(h => h.total_propostas || 0)) : 1
+
+  const evolucao = hist.length < 2
+    ? `<div class="painel-secao">
+        <div class="painel-secao-titulo">📈 Evolução dos Processamentos</div>
+        <div class="painel-empty">Ainda não há processamentos suficientes para mostrar a evolução.<br>Processe as planilhas por alguns dias para ver o histórico aqui.</div>
+      </div>`
+    : `<div class="painel-secao">
+        <div class="painel-secao-titulo">📈 Evolução dos Processamentos</div>
+        <div class="painel-secao-sub">Total de propostas processadas nos últimos ${hist.length} processamentos</div>
+        <div class="evo-wrap">
+          ${hist.map(h => {
+            const val = h.total_propostas || 0
+            const altura = maxHist ? Math.max((val/maxHist)*100, 2) : 2
+            const dt = new Date(h.criado_em)
+            const label = dt.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})
+            return `<div class="evo-col">
+              <div class="evo-val">${val}</div>
+              <div class="evo-bar" style="height:${altura}%" title="${val} propostas em ${label}"></div>
+              <div class="evo-data">${label}</div>
+            </div>`
+          }).join('')}
+        </div>
+      </div>`
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="dash-header">
+        <div class="dash-title">📊 Painel Gerencial</div>
+        <button class="btn btn-secondary btn-sm" onclick="carregarPainel()">↺ Atualizar</button>
+      </div>
+      ${resumo}
+    </div>
+    ${funil}
+    ${carga}
+    ${ranking}
+    ${evolucao}`
 }
 
 // ============================================================
