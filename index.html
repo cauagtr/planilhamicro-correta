@@ -125,6 +125,28 @@
   .btn-trocar-v2:hover { background: #eef2ff; color: var(--azul); }
   tr:hover .btn-trocar-v2 { color: #6b7280; }
 
+  /* ══ MODAL DE SELEÇÃO DE RESPONSÁVEL ══ */
+  .modal-resp-box { background: #fff; border-radius: 14px; width: 100%; max-width: 440px; box-shadow: 0 20px 60px rgba(0,0,0,.3); overflow: hidden; animation: modalIn .16s ease; }
+  @keyframes modalIn { from { opacity: 0; transform: scale(.96) translateY(-8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .mr-header { background: var(--azul); color: #fff; padding: 16px 20px; border-bottom: 3px solid var(--dourado); }
+  .mr-titulo { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  .mr-sub { font-size: 12px; color: rgba(255,255,255,.7); }
+  .mr-sub b { color: var(--dourado); font-family: 'IBM Plex Mono', monospace; }
+  .mr-body { padding: 14px; max-height: 400px; overflow-y: auto; }
+  .mr-busca { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 13px; margin-bottom: 12px; }
+  .mr-busca:focus { outline: none; border-color: var(--azul); box-shadow: 0 0 0 3px rgba(0,51,102,.1); }
+  .mr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+  .mr-opt.hidden { display: none; }
+  .mr-vazio { text-align: center; padding: 16px; color: var(--text-muted); font-size: 12.5px; }
+  .mr-opt { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 9px; cursor: pointer; transition: all .12s; background: #fff; }
+  .mr-opt:hover { border-color: var(--azul); background: #eef2ff; transform: translateY(-1px); }
+  .mr-opt.atual { border-color: var(--azul); background: #eef2ff; }
+  .mr-opt-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; border: 2px solid rgba(0,0,0,.07); }
+  .mr-opt-nome { font-size: 12.5px; font-weight: 600; color: var(--text); }
+  .mr-opt-check { margin-left: auto; color: var(--azul); font-weight: 700; }
+  .mr-footer { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+  .mr-hint { font-size: 11px; color: var(--text-muted); }
+
   /* ══ PAGINAÇÃO + LOTE + VALIDAÇÃO (Fase 6) ══ */
   .pag-wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px 0; flex-wrap: wrap; }
   .pag-info { font-size: 12px; color: var(--text-muted); }
@@ -330,6 +352,27 @@
   .dd-option-avatar { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; border: 1.5px solid rgba(0,0,0,0.08); }
   .dd-option .dd-check { margin-left: auto; color: var(--azul); font-size: 12px; }
 
+
+  /* ══ MODAL DE SELEÇÃO DE RESPONSÁVEL ══ */
+  .sel-header { background: var(--azul); color: #fff; padding: 16px 20px; border-bottom: 3px solid var(--dourado); }
+  .sel-titulo { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .sel-sub { font-size: 12px; color: #cbd5e1; }
+  .sel-sub b { color: var(--dourado); font-family: 'IBM Plex Mono', monospace; }
+  .sel-body { padding: 14px; max-height: 60vh; overflow-y: auto; }
+  .sel-busca { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 13px; margin-bottom: 12px; }
+  .sel-busca:focus { outline: none; border-color: var(--azul); box-shadow: 0 0 0 3px rgba(0,51,102,.1); }
+  .sel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+  .sel-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 9px; cursor: pointer; transition: all .12s; background: #fff; }
+  .sel-item:hover { border-color: var(--azul); background: #f0f6ff; transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,.07); }
+  .sel-item.atual { border-color: var(--azul); background: #eef2ff; }
+  .sel-item.hidden { display: none; }
+  .sel-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; border: 2px solid rgba(0,0,0,.07); }
+  .sel-nome { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+  .sel-check { color: var(--azul); font-size: 14px; font-weight: 700; }
+  .sel-footer { padding: 12px 20px; background: #f8fafc; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .sel-hint { font-size: 11px; color: var(--text-muted); }
+  .sel-vazio { text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; }
+
   /* ══ PAGINAÇÃO + LOTE + VALIDAÇÃO (Fase 6) ══ */
   .pag-wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px 0; flex-wrap: wrap; }
   .pag-info { font-size: 12px; color: var(--text-muted); }
@@ -472,6 +515,25 @@
   <div id="view-painel" style="display:none"></div>
   <div id="view-historico" style="display:none"></div>
 </main>
+
+<!-- MODAL SELEÇÃO DE RESPONSÁVEL -->
+<div class="modal-overlay" id="modal-resp" style="display:none" onclick="fecharModalResp(event)">
+  <div class="modal-resp-box" onclick="event.stopPropagation()">
+    <div class="mr-header">
+      <div class="mr-titulo" id="mr-titulo">Selecionar responsável</div>
+      <div class="mr-sub" id="mr-sub"></div>
+    </div>
+    <div class="mr-body">
+      <input type="text" class="mr-busca" id="mr-busca" placeholder="🔍 Digite para filtrar..." oninput="filtrarModalResp(this.value)" autocomplete="off"/>
+      <div class="mr-grid" id="mr-grid"></div>
+      <div class="mr-vazio" id="mr-vazio" style="display:none">Nenhum colaborador encontrado</div>
+    </div>
+    <div class="mr-footer">
+      <span class="mr-hint">Clique em um colaborador · Esc para fechar</span>
+      <button class="btn btn-secondary btn-sm" onclick="fecharModalResp()">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL OBSERVAÇÃO -->
 <div class="modal-overlay" id="modal-obs" style="display:none" onclick="fecharModal(event)">
@@ -1458,17 +1520,13 @@ function renderTabelaPropostas() {
 
     const respCell = resp === 'N/A'
       ? `<td><div class="resp-cell"><span class="resp-tarja" style="background:#cbd5e1"></span>
-           <div class="dd-wrap">
-             <div class="dd-trigger" onclick="abrirDropdown(this, '${p.codigo}', 'N/A')">— Atribuir — <span class="dd-arrow">▼</span></div>
-           </div>
+           <div class="dd-trigger" onclick="abrirDropdown(this, '${p.codigo}', 'N/A')">👤 Atribuir</div>
          </div></td>`
       : `<td><div class="resp-cell">
            <span class="resp-tarja" style="background:${bg}"></span>
            <span class="resp-avatar" style="background:${bg};color:${fg}">${iniciais}</span>
            <span class="resp-nome">${resp}</span>
-           <div class="dd-wrap">
-             <button class="btn-trocar-v2" title="Trocar responsável" onclick="abrirDropdown(this, '${p.codigo}', '${resp}')">✎</button>
-           </div>
+           <button class="btn-trocar-v2" title="Trocar responsável" onclick="abrirDropdown(this, '${p.codigo}', '${resp}')">✎</button>
          </div></td>`
 
     const obs = p.observacao || ''
@@ -1572,6 +1630,8 @@ function setPagTamanho(v) {
 }
 
 let dropdownAberto = null
+let modalRespCodigo = null
+let modalRespLote = false
 
 function fecharDropdown() {
   if (dropdownAberto) {
@@ -1587,41 +1647,81 @@ function handlerFecharFora(e) {
   }
 }
 
+// ── Modal de seleção de responsável (substitui o dropdown inline) ──
 function abrirDropdown(anchor, codigo, respAtual) {
-  // Se já está aberto, fecha (toggle)
-  if (dropdownAberto && dropdownAberto.dataset.codigo === String(codigo)) {
-    fecharDropdown()
-    return
-  }
-  fecharDropdown()
-
-  const menu = document.createElement('div')
-  menu.className = 'dd-menu'
-  menu.dataset.codigo = codigo
-  menu.innerHTML = COLAB_LIST.filter(c => c !== 'N/A').map(c => {
-    const cor = getCorColab(c)
-    const fgC = getTextColor(cor)
-    const ini = getIniciais(c)
-    const sel = c === respAtual ? 'selected' : ''
-    const check = c === respAtual ? '<span class="dd-check">✓</span>' : ''
-    return `<div class="dd-option ${sel}" onclick="selecionarResp('${codigo}','${c}')">
-      <span class="dd-option-avatar" style="background:${cor};color:${fgC}">${ini}</span>
-      ${c}${check}
-    </div>`
-  }).join('')
-
-  // Posicionar dentro do dd-wrap do anchor
-  const wrap = anchor.closest('.dd-wrap')
-  wrap.appendChild(menu)
-  dropdownAberto = menu
-
-  // Fechar ao clicar fora
-  setTimeout(() => document.addEventListener('click', handlerFecharFora, true), 0)
+  modalRespCodigo = String(codigo)
+  modalRespLote = false
+  const p = todasPropostas.find(x => String(x.codigo) === String(codigo))
+  document.getElementById('mr-titulo').textContent = respAtual === 'N/A' ? 'Atribuir responsável' : 'Trocar responsável'
+  document.getElementById('mr-sub').innerHTML = `Proposta <b>${codigo}</b>${p && p.etapa ? ' · ' + p.etapa : ''}`
+  montarGridResp(respAtual)
+  abrirModalRespUI()
 }
 
-async function selecionarResp(codigo, novo) {
+// Abre o modal e prepara a UI (busca limpa + foco)
+function abrirModalRespUI() {
+  const busca = document.getElementById('mr-busca')
+  if (busca) busca.value = ''
+  document.getElementById('mr-vazio').style.display = 'none'
+  document.getElementById('modal-resp').style.display = 'flex'
+  setTimeout(() => busca && busca.focus(), 60)
+}
+
+// Filtra os colaboradores conforme a digitação
+function filtrarModalResp(termo) {
+  const q = (termo || '').toLowerCase().trim()
+  const opts = document.querySelectorAll('#mr-grid .mr-opt')
+  let visiveis = 0
+  opts.forEach(o => {
+    const nome = (o.dataset.nome || '').toLowerCase()
+    const bate = !q || nome.includes(q)
+    o.classList.toggle('hidden', !bate)
+    if (bate) visiveis++
+  })
+  document.getElementById('mr-vazio').style.display = visiveis === 0 ? '' : 'none'
+}
+
+function abrirModalRespLote() {
   fecharDropdown()
-  const atual = todasPropostas.find(p => p.codigo === codigo)
+  const n = selecionadas.size
+  if (!n) return
+  modalRespCodigo = null
+  modalRespLote = true
+  document.getElementById('mr-titulo').textContent = 'Reatribuir em lote'
+  document.getElementById('mr-sub').innerHTML = `<b>${n}</b> proposta${n!==1?'s':''} selecionada${n!==1?'s':''}`
+  montarGridResp(null)
+  abrirModalRespUI()
+}
+
+function montarGridResp(respAtual) {
+  document.getElementById('mr-grid').innerHTML = COLAB_LIST.filter(c => c !== 'N/A').map(c => {
+    const cor = getCorColab(c)
+    const fgC = getTextColor(cor)
+    const ehAtual = c === respAtual
+    return `<div class="mr-opt ${ehAtual?'atual':''}" data-nome="${c}" onclick="escolherResp('${c.replace(/'/g,"\\'")}')">
+      <span class="mr-opt-avatar" style="background:${cor};color:${fgC}">${getIniciais(c)}</span>
+      <span class="mr-opt-nome">${c}</span>
+      ${ehAtual ? '<span class="mr-opt-check">✓</span>' : ''}
+    </div>`
+  }).join('')
+}
+
+function fecharModalResp(e) {
+  if (e && e.target !== document.getElementById('modal-resp')) return
+  document.getElementById('modal-resp').style.display = 'none'
+  modalRespCodigo = null
+  modalRespLote = false
+}
+
+async function escolherResp(novo) {
+  const emLote = modalRespLote
+  const codigo = modalRespCodigo
+  document.getElementById('modal-resp').style.display = 'none'
+  modalRespCodigo = null
+  modalRespLote = false
+
+  if (emLote) { await reatribuirLote(novo); return }
+  const atual = todasPropostas.find(p => String(p.codigo) === String(codigo))
   if (atual && atual.responsavel === novo) return
   await atribuirResponsavel(codigo, novo, null)
 }
@@ -1760,39 +1860,13 @@ function renderBarraLote() {
       <span class="lote-count">${n} selecionada${n!==1?'s':''} <small>de ${totalFiltrado} filtradas</small></span>
       <div class="lote-acoes">
         ${n < totalFiltrado ? `<button class="btn-lote" onclick="selecionarTodosFiltrados()">Selecionar todas as ${totalFiltrado}</button>` : ''}
-        <div class="dd-wrap">
-          <button class="btn-lote primario" onclick="abrirDropdownLote(this)">👤 Reatribuir para... ▼</button>
-        </div>
+        <button class="btn-lote primario" onclick="abrirModalRespLote()">👤 Reatribuir para...</button>
         <button class="btn-lote" onclick="limparSelecao()">✕ Limpar</button>
       </div>
     </div>`
 }
 
-function abrirDropdownLote(anchor) {
-  if (dropdownAberto && dropdownAberto.dataset.lote === 'sim') { fecharDropdown(); return }
-  fecharDropdown()
-
-  const menu = document.createElement('div')
-  menu.className = 'dd-menu'
-  menu.dataset.lote = 'sim'
-  menu.style.right = '0'
-  menu.style.left = 'auto'
-  menu.innerHTML = COLAB_LIST.filter(c => c !== 'N/A').map(c => {
-    const cor = getCorColab(c)
-    const fgC = getTextColor(cor)
-    return `<div class="dd-option" onclick="reatribuirLote('${c}')">
-      <span class="dd-option-avatar" style="background:${cor};color:${fgC}">${getIniciais(c)}</span>
-      ${c}
-    </div>`
-  }).join('')
-
-  anchor.closest('.dd-wrap').appendChild(menu)
-  dropdownAberto = menu
-  setTimeout(() => document.addEventListener('click', handlerFecharFora, true), 0)
-}
-
 async function reatribuirLote(novoResp) {
-  fecharDropdown()
   const codigos = [...selecionadas]
   if (!codigos.length) return
 
@@ -2204,6 +2278,260 @@ function renderPainel() {
     ${evolucao}`
 }
 
+
+// ── Exportação do Painel Gerencial ──
+function calcularDadosPainel() {
+  const props = dadosPainel.propostas
+  const ETAPAS_FIN = ['concedido','excluído','excluido','recusado']
+  const ativas = props.filter(p => !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim()))
+  const paradas = ativas.filter(p => { const d = diasParados(p.na_etapa_desde); return d !== null && d >= DIAS_LIMITE_PARADA })
+  const concedidas = props.filter(p => (p.etapa||'').toLowerCase().trim() === 'concedido')
+
+  const etapaMap = {}
+  props.forEach(p => {
+    const e = (p.etapa||'—').trim() || '—'
+    if (!etapaMap[e]) etapaMap[e] = { count: 0, valor: 0 }
+    etapaMap[e].count++
+    etapaMap[e].valor += valorNum(p)
+  })
+
+  const cargaMap = {}
+  props.forEach(p => {
+    const r = (p.responsavel || 'N/A').toUpperCase().trim()
+    if (!cargaMap[r]) cargaMap[r] = { total: 0, ativas: 0, paradas: 0, valorAtivo: 0, valorTotal: 0, concedidas: 0 }
+    cargaMap[r].total++
+    cargaMap[r].valorTotal += valorNum(p)
+    if ((p.etapa||'').toLowerCase().trim() === 'concedido') cargaMap[r].concedidas++
+    if (!ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim())) {
+      cargaMap[r].ativas++
+      cargaMap[r].valorAtivo += valorNum(p)
+      const d = diasParados(p.na_etapa_desde)
+      if (d !== null && d >= DIAS_LIMITE_PARADA) cargaMap[r].paradas++
+    }
+  })
+
+  const rankParadas = ativas
+    .map(p => ({ ...p, dias: diasParados(p.na_etapa_desde) }))
+    .filter(p => p.dias !== null && p.dias >= DIAS_LIMITE_PARADA)
+    .sort((a,b) => b.dias - a.dias)
+
+  return {
+    props, ativas, paradas, concedidas, etapaMap, cargaMap, rankParadas,
+    valorTotal: props.reduce((s,p) => s + valorNum(p), 0),
+    valorAtivo: ativas.reduce((s,p) => s + valorNum(p), 0),
+    valorConcedido: concedidas.reduce((s,p) => s + valorNum(p), 0),
+    semResp: props.filter(p => !p.responsavel || p.responsavel === 'N/A').length,
+  }
+}
+
+function exportarPainelExcel() {
+  if (!dadosPainel.propostas.length) { showToast('Nenhum dado para exportar', 'error'); return }
+  const d = calcularDadosPainel()
+  const wb = XLSX.utils.book_new()
+
+  // Aba 1 — Resumo Executivo
+  const resumo = [
+    { Indicador: 'Data do relatório', Valor: new Date().toLocaleString('pt-BR') },
+    { Indicador: 'Total de propostas', Valor: d.props.length },
+    { Indicador: 'Em tratativa (ativas)', Valor: d.ativas.length },
+    { Indicador: 'Concedidas', Valor: d.concedidas.length },
+    { Indicador: 'Paradas 15+ dias', Valor: d.paradas.length },
+    { Indicador: 'Sem responsável', Valor: d.semResp },
+    { Indicador: 'Valor total', Valor: d.valorTotal },
+    { Indicador: 'Valor em tratativa', Valor: d.valorAtivo },
+    { Indicador: 'Valor concedido', Valor: d.valorConcedido },
+  ]
+  const wsR = XLSX.utils.json_to_sheet(resumo)
+  wsR['!cols'] = [{wch:26},{wch:24}]
+  XLSX.utils.book_append_sheet(wb, wsR, 'Resumo Executivo')
+
+  // Aba 2 — Funil por Etapa
+  const funil = Object.entries(d.etapaMap)
+    .sort((a,b) => b[1].count - a[1].count)
+    .map(([etapa, v]) => ({
+      'Etapa': etapa,
+      'Quantidade': v.count,
+      '% do Total': ((v.count/d.props.length)*100).toFixed(1) + '%',
+      'Valor Acumulado (R$)': v.valor,
+    }))
+  const wsF = XLSX.utils.json_to_sheet(funil)
+  wsF['!cols'] = [{wch:30},{wch:12},{wch:12},{wch:20}]
+  XLSX.utils.book_append_sheet(wb, wsF, 'Funil por Etapa')
+
+  // Aba 3 — Carga por Responsável
+  const carga = Object.entries(d.cargaMap)
+    .filter(([r]) => r !== 'N/A')
+    .sort((a,b) => b[1].ativas - a[1].ativas)
+    .map(([nome, v]) => ({
+      'Responsável': nome,
+      'Total de Propostas': v.total,
+      'Em Tratativa': v.ativas,
+      'Concedidas': v.concedidas,
+      'Paradas 15+ dias': v.paradas,
+      'Valor em Tratativa (R$)': v.valorAtivo,
+      'Valor Total (R$)': v.valorTotal,
+    }))
+  const wsC = XLSX.utils.json_to_sheet(carga)
+  wsC['!cols'] = [{wch:14},{wch:18},{wch:13},{wch:12},{wch:16},{wch:20},{wch:18}]
+  XLSX.utils.book_append_sheet(wb, wsC, 'Carga por Responsável')
+
+  // Aba 4 — Propostas Paradas
+  if (d.rankParadas.length) {
+    const rank = d.rankParadas.map((p,i) => ({
+      '#': i+1,
+      'Responsável': p.responsavel || 'N/A',
+      'Código da Operação': p.codigo,
+      'Etapa': p.etapa,
+      'Valor (R$)': valorNum(p),
+      'Na Etapa Desde': formatData(p.na_etapa_desde),
+      'Dias Parada': p.dias,
+    }))
+    const wsP = XLSX.utils.json_to_sheet(rank)
+    wsP['!cols'] = [{wch:5},{wch:14},{wch:18},{wch:26},{wch:14},{wch:15},{wch:12}]
+    XLSX.utils.book_append_sheet(wb, wsP, 'Propostas Paradas')
+  }
+
+  // Aba 5 — Histórico
+  if (dadosPainel.historico.length) {
+    const hist = dadosPainel.historico.map(h => ({
+      'Data': new Date(h.criado_em).toLocaleString('pt-BR'),
+      'Total de Propostas': h.total_propostas || 0,
+      'Arquivos': (h.arquivos_enviados || []).join(', '),
+    }))
+    const wsH = XLSX.utils.json_to_sheet(hist)
+    wsH['!cols'] = [{wch:20},{wch:18},{wch:50}]
+    XLSX.utils.book_append_sheet(wb, wsH, 'Histórico')
+  }
+
+  const hoje = new Date().toISOString().split('T')[0]
+  XLSX.writeFile(wb, `Painel_Gerencial_Microcredito_${hoje}.xlsx`)
+  showToast('✓ Relatório gerencial exportado')
+}
+
+function exportarPainelPDF() {
+  if (!dadosPainel.propostas.length) { showToast('Nenhum dado para exportar', 'error'); return }
+  const d = calcularDadosPainel()
+
+  const corEtapa = (e) => {
+    const x = e.toLowerCase()
+    if (x === 'concedido') return '#16a34a'
+    if (x === 'excluído' || x === 'excluido') return '#dc2626'
+    if (x === 'recusado') return '#d97706'
+    return '#3b82f6'
+  }
+
+  const etapasOrd = Object.entries(d.etapaMap).sort((a,b) => b[1].count - a[1].count)
+  const maxEtapa = etapasOrd.length ? etapasOrd[0][1].count : 1
+  const cargaOrd = Object.entries(d.cargaMap).filter(([r]) => r !== 'N/A').sort((a,b) => b[1].ativas - a[1].ativas)
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+  <title>Painel Gerencial — Fomento Paraná</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; color: #1a1a2e; }
+    .hdr { background: #003366; color: #fff; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #F5C400; }
+    .hdr h1 { font-size: 16px; font-weight: 700; }
+    .hdr .sub { font-size: 10px; color: #cbd5e1; margin-top: 2px; }
+    .hdr .data { font-size: 9px; color: #94a3b8; text-align: right; }
+    h2 { font-size: 12px; color: #003366; margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #F5C400; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+    .card { border: 1px solid #e5e7eb; border-radius: 6px; padding: 9px 11px; background: #f8fafc; border-left: 3px solid #003366; }
+    .card.verde { border-left-color: #16a34a; }
+    .card.alerta { border-left-color: #dc2626; background: #fef2f2; }
+    .card .lbl { font-size: 8px; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: .3px; }
+    .card .val { font-size: 17px; font-weight: 700; color: #003366; margin-top: 2px; }
+    .card.alerta .val { color: #dc2626; }
+    .card .sub { font-size: 8.5px; color: #9ca3af; margin-top: 1px; }
+    table { width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 6px; }
+    thead th { background: #003366; color: #fff; padding: 6px 7px; text-align: left; font-size: 8px; text-transform: uppercase; letter-spacing: .3px; }
+    tbody td { padding: 5px 7px; border-bottom: 1px solid #eef0f3; }
+    tbody tr:nth-child(even) { background: #fafbfc; }
+    .right { text-align: right; }
+    .center { text-align: center; }
+    .mono { font-family: 'Consolas', monospace; }
+    .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .bar-lbl { font-size: 9px; width: 150px; text-align: right; font-weight: 600; }
+    .bar-track { flex: 1; height: 18px; background: #f1f5f9; border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 3px; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; color: #fff; font-size: 8.5px; font-weight: 700; }
+    .bar-val { font-size: 8.5px; color: #6b7280; width: 95px; text-align: right; font-family: 'Consolas', monospace; }
+    .parada td { color: #991b1b; }
+    .ft { margin-top: 14px; padding-top: 8px; border-top: 2px solid #F5C400; font-size: 8px; color: #9ca3af; text-align: center; }
+    .no-print { position: fixed; top: 10px; right: 10px; background: #003366; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+    @media print { .no-print { display: none; } h2 { page-break-after: avoid; } table { page-break-inside: auto; } tr { page-break-inside: avoid; } }
+  </style></head><body>
+  <button class="no-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+
+  <div class="hdr">
+    <div><h1>FOMENTO PARANÁ — Painel Gerencial</h1><div class="sub">Sistema de Microcrédito · Relatório de Indicadores</div></div>
+    <div class="data">Gerado em<br><b>${new Date().toLocaleString('pt-BR')}</b></div>
+  </div>
+
+  <h2>Resumo Executivo</h2>
+  <div class="cards">
+    <div class="card"><div class="lbl">Total de Propostas</div><div class="val">${d.props.length}</div></div>
+    <div class="card verde"><div class="lbl">Em Tratativa</div><div class="val">${d.ativas.length}</div><div class="sub">${formatValor(d.valorAtivo)}</div></div>
+    <div class="card verde"><div class="lbl">Concedidas</div><div class="val">${d.concedidas.length}</div><div class="sub">${formatValor(d.valorConcedido)}</div></div>
+    <div class="card ${d.paradas.length?'alerta':''}"><div class="lbl">Paradas ${DIAS_LIMITE_PARADA}+ dias</div><div class="val">${d.paradas.length}</div><div class="sub">precisam de atenção</div></div>
+    <div class="card ${d.semResp?'alerta':''}"><div class="lbl">Sem Responsável</div><div class="val">${d.semResp}</div></div>
+    <div class="card"><div class="lbl">Valor Total</div><div class="val" style="font-size:13px">${formatValor(d.valorTotal)}</div></div>
+  </div>
+
+  <h2>Funil de Propostas por Etapa</h2>
+  ${etapasOrd.map(([etapa, v]) => {
+    const pct = Math.round((v.count/maxEtapa)*100)
+    const pctT = ((v.count/d.props.length)*100).toFixed(1)
+    return `<div class="bar-row">
+      <div class="bar-lbl">${etapa}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${corEtapa(etapa)}">${v.count}</div></div>
+      <div class="bar-val">${pctT}% · ${formatValor(v.valor)}</div>
+    </div>`
+  }).join('')}
+
+  <h2>Carga de Trabalho por Responsável</h2>
+  <table>
+    <thead><tr><th>Responsável</th><th class="center">Total</th><th class="center">Em Tratativa</th><th class="center">Concedidas</th><th class="center">Paradas</th><th class="right">Valor em Tratativa</th></tr></thead>
+    <tbody>
+      ${cargaOrd.map(([nome, v]) => `<tr>
+        <td><b>${nome}</b></td>
+        <td class="center">${v.total}</td>
+        <td class="center"><b>${v.ativas}</b></td>
+        <td class="center">${v.concedidas}</td>
+        <td class="center" style="${v.paradas?'color:#dc2626;font-weight:700':''}">${v.paradas || '—'}</td>
+        <td class="right mono">${formatValor(v.valorAtivo)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>
+
+  <h2>Propostas Mais Paradas (${DIAS_LIMITE_PARADA}+ dias)</h2>
+  ${d.rankParadas.length === 0
+    ? `<div style="padding:16px;text-align:center;color:#16a34a;background:#f0fdf4;border-radius:6px;font-size:10px;font-weight:600">✓ Nenhuma proposta parada há mais de ${DIAS_LIMITE_PARADA} dias</div>`
+    : `<table>
+        <thead><tr><th>#</th><th>Responsável</th><th>Código</th><th>Etapa</th><th class="right">Valor</th><th class="center">Dias</th></tr></thead>
+        <tbody>
+          ${d.rankParadas.slice(0,25).map((p,i) => `<tr class="parada">
+            <td>${i+1}</td>
+            <td>${p.responsavel || 'N/A'}</td>
+            <td class="mono"><b>${p.codigo}</b></td>
+            <td>${p.etapa}</td>
+            <td class="right mono">${formatValor(p.valor)}</td>
+            <td class="center"><b>${p.dias}</b></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      ${d.rankParadas.length > 25 ? `<div style="font-size:8.5px;color:#9ca3af;margin-top:4px">Mostrando as 25 mais paradas de ${d.rankParadas.length} no total.</div>` : ''}`
+  }
+
+  <div class="ft">Fomento Paraná — Documento interno · Painel Gerencial gerado automaticamente pelo Sistema de Microcrédito</div>
+  </body></html>`
+
+  const win = window.open('', '_blank')
+  if (!win) { showToast('Permita pop-ups para exportar o PDF', 'error'); return }
+  win.document.write(html)
+  win.document.close()
+  showToast('✓ Relatório gerencial gerado')
+}
+
 // ============================================================
 // ABA HISTÓRICO
 // ============================================================
@@ -2245,6 +2573,16 @@ async function carregarHistorico() {
 // ============================================================
 // INIT
 // ============================================================
+
+// Fecha modais com a tecla Esc
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return
+  const mResp = document.getElementById('modal-resp')
+  if (mResp && mResp.style.display === 'flex') { fecharModalResp(); return }
+  const mObs = document.getElementById('modal-obs')
+  if (mObs && mObs.style.display === 'flex') { fecharModal(); return }
+})
+
 renderProcessar()
 renderPropostas()
 renderHistorico()
