@@ -147,6 +147,46 @@
   .mr-footer { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
   .mr-hint { font-size: 11px; color: var(--text-muted); }
 
+  .linha-badge { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 6px; white-space: nowrap; border: 1px solid transparent; display: inline-block; }
+
+  /* ══ TOOLTIPS DE AJUDA ══ */
+  .ajuda { position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 15px; height: 15px; border-radius: 50%; background: rgba(100,116,139,.18);
+    color: #64748b; font-size: 10px; font-weight: 700; cursor: help; margin-left: 5px;
+    vertical-align: middle; transition: all .12s; flex-shrink: 0; font-family: 'IBM Plex Sans', sans-serif; }
+  .ajuda:hover { background: var(--azul); color: #fff; transform: scale(1.12); }
+  .ajuda::after {
+    content: attr(data-ajuda);
+    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
+    background: #1e293b; color: #f1f5f9; font-size: 11.5px; font-weight: 400; line-height: 1.5;
+    padding: 9px 12px; border-radius: 8px; width: max-content; max-width: 260px;
+    text-align: left; white-space: normal; box-shadow: 0 8px 24px rgba(0,0,0,.28);
+    opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .15s, transform .15s;
+    z-index: 5000; }
+  .ajuda::before {
+    content: ''; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: #1e293b;
+    opacity: 0; visibility: hidden; transition: opacity .15s; z-index: 5001; }
+  .ajuda:hover::after, .ajuda:hover::before { opacity: 1; visibility: visible; }
+  .ajuda:hover::after { transform: translateX(-50%) translateY(0); }
+  /* Variante para tooltips perto da borda esquerda */
+  .ajuda.ajuda-dir::after { left: 0; transform: translateX(0) translateY(4px); }
+  .ajuda.ajuda-dir:hover::after { transform: translateX(0) translateY(0); }
+  .ajuda.ajuda-dir::before { left: 10px; }
+  /* Variante para tooltips perto da borda direita */
+  .ajuda.ajuda-esq::after { left: auto; right: 0; transform: translateX(0) translateY(4px); }
+  .ajuda.ajuda-esq:hover::after { transform: translateX(0) translateY(0); }
+  .ajuda.ajuda-esq::before { left: auto; right: 10px; }
+  /* Variante que abre para baixo (quando está no topo da tela) */
+  .ajuda.ajuda-baixo::after { bottom: auto; top: calc(100% + 8px); transform: translateX(-50%) translateY(-4px); }
+  .ajuda.ajuda-baixo:hover::after { transform: translateX(-50%) translateY(0); }
+  .ajuda.ajuda-baixo::before { bottom: auto; top: calc(100% + 2px); border-top-color: transparent; border-bottom-color: #1e293b; }
+  /* Dentro de cabeçalho de tabela */
+  th .ajuda { background: rgba(0,51,102,.15); color: var(--azul); }
+  th .ajuda:hover { background: var(--azul); color: #fff; }
+  /* Dentro de card do dashboard */
+  .dash-label .ajuda { width: 14px; height: 14px; font-size: 9px; }
+
   /* ══ PAGINAÇÃO + LOTE + VALIDAÇÃO (Fase 6) ══ */
   .pag-wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px 0; flex-wrap: wrap; }
   .pag-info { font-size: 12px; color: var(--text-muted); }
@@ -321,6 +361,7 @@
   .dash-card.accent-dourado { --accent: #d4a017; }
   .dash-card.accent-vermelho { --accent: #dc2626; }
   .dash-card.accent-parada { --accent: #ea580c; background: #fff7ed; }
+  .dash-card.accent-cinza { --accent: #64748b; }
   .dash-card.accent-roxo { --accent: #7c3aed; }
 
   .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
@@ -372,6 +413,46 @@
   .sel-footer { padding: 12px 20px; background: #f8fafc; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   .sel-hint { font-size: 11px; color: var(--text-muted); }
   .sel-vazio { text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; }
+
+  .linha-badge { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 6px; white-space: nowrap; border: 1px solid transparent; display: inline-block; }
+
+  /* ══ TOOLTIPS DE AJUDA ══ */
+  .ajuda { position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 15px; height: 15px; border-radius: 50%; background: rgba(100,116,139,.18);
+    color: #64748b; font-size: 10px; font-weight: 700; cursor: help; margin-left: 5px;
+    vertical-align: middle; transition: all .12s; flex-shrink: 0; font-family: 'IBM Plex Sans', sans-serif; }
+  .ajuda:hover { background: var(--azul); color: #fff; transform: scale(1.12); }
+  .ajuda::after {
+    content: attr(data-ajuda);
+    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
+    background: #1e293b; color: #f1f5f9; font-size: 11.5px; font-weight: 400; line-height: 1.5;
+    padding: 9px 12px; border-radius: 8px; width: max-content; max-width: 260px;
+    text-align: left; white-space: normal; box-shadow: 0 8px 24px rgba(0,0,0,.28);
+    opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .15s, transform .15s;
+    z-index: 5000; }
+  .ajuda::before {
+    content: ''; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: #1e293b;
+    opacity: 0; visibility: hidden; transition: opacity .15s; z-index: 5001; }
+  .ajuda:hover::after, .ajuda:hover::before { opacity: 1; visibility: visible; }
+  .ajuda:hover::after { transform: translateX(-50%) translateY(0); }
+  /* Variante para tooltips perto da borda esquerda */
+  .ajuda.ajuda-dir::after { left: 0; transform: translateX(0) translateY(4px); }
+  .ajuda.ajuda-dir:hover::after { transform: translateX(0) translateY(0); }
+  .ajuda.ajuda-dir::before { left: 10px; }
+  /* Variante para tooltips perto da borda direita */
+  .ajuda.ajuda-esq::after { left: auto; right: 0; transform: translateX(0) translateY(4px); }
+  .ajuda.ajuda-esq:hover::after { transform: translateX(0) translateY(0); }
+  .ajuda.ajuda-esq::before { left: auto; right: 10px; }
+  /* Variante que abre para baixo (quando está no topo da tela) */
+  .ajuda.ajuda-baixo::after { bottom: auto; top: calc(100% + 8px); transform: translateX(-50%) translateY(-4px); }
+  .ajuda.ajuda-baixo:hover::after { transform: translateX(-50%) translateY(0); }
+  .ajuda.ajuda-baixo::before { bottom: auto; top: calc(100% + 2px); border-top-color: transparent; border-bottom-color: #1e293b; }
+  /* Dentro de cabeçalho de tabela */
+  th .ajuda { background: rgba(0,51,102,.15); color: var(--azul); }
+  th .ajuda:hover { background: var(--azul); color: #fff; }
+  /* Dentro de card do dashboard */
+  .dash-label .ajuda { width: 14px; height: 14px; font-size: 9px; }
 
   /* ══ PAGINAÇÃO + LOTE + VALIDAÇÃO (Fase 6) ══ */
   .pag-wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px 0; flex-wrap: wrap; }
@@ -470,6 +551,27 @@
   .evo-data { font-size: 9.5px; color: var(--text-muted); white-space: nowrap; }
 
   .painel-empty { text-align: center; padding: 30px; color: var(--text-muted); font-size: 13px; }
+
+  /* Filtros do painel */
+  .painel-filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .painel-filtros .fa-input { max-width: 240px; }
+
+  /* Separador do funil */
+  .funil-sep { font-size: 10.5px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .5px; margin: 10px 0 4px; padding-top: 8px; border-top: 1px dashed var(--border); }
+
+  /* Cards de linha de crédito */
+  .linha-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .linha-card { border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .linha-card-top { padding: 8px 12px; font-size: 12px; font-weight: 700; }
+  .linha-card-num { padding: 10px 12px 2px; font-size: 26px; font-weight: 700; color: var(--text); display: flex; align-items: baseline; gap: 8px; }
+  .linha-card-pct { font-size: 12px; font-weight: 600; color: #9ca3af; }
+  .linha-card-val { padding: 0 12px 12px; font-size: 12px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; }
+
+  /* Resumo da evolução */
+  .evo-resumo { display: flex; gap: 24px; margin-bottom: 16px; }
+  .evo-resumo-item { display: flex; flex-direction: column; }
+  .evo-resumo-num { font-size: 24px; font-weight: 700; color: var(--azul); }
+  .evo-resumo-lbl { font-size: 11px; color: var(--text-muted); }
 
   /* Feedback de salvamento inline */
   .salvo-flash { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #16a34a; animation: flashIn .2s ease; }
@@ -598,6 +700,59 @@ const COLABORADORES = {
 // Ordem dos botões de filtro: colaboradores na ordem certa, depois Valério e N/A no final
 const COLAB_LIST = ['ANDRESSA','ANNA','CAUÃ','CONRADO','JULIANO','LETICIA','MARCOS','PEDRO','RAIANE','VALÉRIO','N/A']
 
+// ── Etapas finalizadas (não estão mais em tratativa) ──
+const ETAPAS_FINALIZADAS = ['concedido','excluído','excluido','recusado']
+function ehFinalizada(etapa) {
+  return ETAPAS_FINALIZADAS.includes((etapa||'').toLowerCase().trim())
+}
+function ehAtiva(etapa) { return !ehFinalizada(etapa) }
+
+// ── Linhas de crédito (coluna C da planilha) ──
+// Normaliza o texto da planilha para um rótulo padrão
+const LINHAS_CREDITO = ['Micro Mulher', 'Micro Fácil', 'Taxista']
+function normalizarLinhaCredito(txt) {
+  const t = (txt||'').toString().toUpperCase().trim()
+  if (!t) return ''
+  if (t.includes('MULHER')) return 'Micro Mulher'
+  if (t.includes('TAXI') || t.includes('TÁXI') || t.includes('TAXISTA')) return 'Taxista'
+  if (t.includes('FACIL') || t.includes('FÁCIL')) return 'Micro Fácil'
+  return txt.toString().trim()  // mantém original se não reconhecer
+}
+function corLinhaCredito(linha) {
+  if (linha === 'Micro Mulher') return '#DB2777'
+  if (linha === 'Micro Fácil') return '#2563EB'
+  if (linha === 'Taxista') return '#CA8A04'
+  return '#94A3B8'
+}
+
+// ── Funil: ordem oficial de avanço das etapas ──
+const FUNIL_ETAPAS = [
+  '1 - Cadastramento',
+  '1.1 - Alteração de Envolvidos',
+  '2 - Consulta Cadastral',
+  '2.1 - Regularização de Restrições',
+  'Análise Cadastral',
+  '3 - Preparação / Recepção de Documentos',
+  '4.1 - Regularização de Documentos',
+  '5 - Aprovação Cadastral',
+  '6 - Análise de Garantias',
+  '6.1 - Regularização de Garantias',
+  '7 - Análise Econômica-Financeira',
+  '7.1 - Regularização da Proposta',
+  '8 - Aprovação do Crédito',
+  '9 - Aprovação do Gerente',
+  '10 - Aprovação do Diretor',
+  '11 - Emissão e Envio do Contrato',
+  '12 - Conferência do Contrato',
+  '12.1 - Regularização do Contrato e/ou Conta Corrente',
+  '13 - Liberação ao Financeiro',
+]
+// Retorna a posição da etapa no funil (para ordenar); -1 se não achar
+function posicaoFunil(etapa) {
+  const e = (etapa||'').toLowerCase().trim()
+  return FUNIL_ETAPAS.findIndex(f => f.toLowerCase().trim() === e)
+}
+
 function getCorColab(nome) {
   if (!nome || nome === 'N/A') return COLABORADORES['N/A']
   const up = nome.toUpperCase().trim()
@@ -681,8 +836,7 @@ const DIAS_LIMITE_PARADA = 15
 
 // Renderiza a célula de data com alerta se estiver parada há muito tempo (só para ativas)
 function celulaData(p) {
-  const etapasFinalizadas = ['concedido','excluído','excluido','recusado']
-  const ativa = !etapasFinalizadas.includes((p.etapa||'').toLowerCase().trim())
+  const ativa = ehAtiva(p.etapa)
   const dias = diasParados(p.na_etapa_desde)
   const dataFmt = formatData(p.na_etapa_desde)
 
@@ -761,6 +915,14 @@ function etapaBadge(etapa) {
   else if (e === 'excluído' || e === 'excluido') cls = 'etapa-excluido'
   else if (e === 'recusado') cls = 'etapa-recusado'
   return `<span class="etapa-badge ${cls}"><span class="etapa-dot"></span>${etapa||'—'}</span>`
+}
+
+// Badge da linha de crédito
+function linhaBadge(linha) {
+  const l = normalizarLinhaCredito(linha)
+  if (!l) return '<span style="color:#cbd5e1;font-size:11px">—</span>'
+  const cor = corLinhaCredito(l)
+  return `<span class="linha-badge" style="background:${cor}15;color:${cor};border-color:${cor}55">${l}</span>`
 }
 
 // Gera as iniciais do colaborador para o avatar
@@ -984,6 +1146,7 @@ function transformar(rows) {
     etapa: getCol(row,'Etapa'),
     valor: getCol(row,'Valor Solicitado','Valor'),
     naEtapaDe: parseData(getCol(row,'Na Etapa Desde','Na Etapa De')),
+    linhaCredito: normalizarLinhaCredito(getCol(row,'Linha de Crédito','Linha de Credito','Linha do Crédito','Linha')),
   }))
 }
 
@@ -1077,6 +1240,7 @@ async function processarPlanilhas() {
       codigo: r.codigo,
       etapa: r.etapa,
       valor: parseValor(r.valor),
+      linha_credito: r.linhaCredito || '',
       na_etapa_desde: (() => {
         try { return r.naEtapaDe && !isNaN(r.naEtapaDe.getTime()) ? r.naEtapaDe.toISOString().split('T')[0] : null }
         catch(e) { return null }
@@ -1155,6 +1319,8 @@ async function processarPlanilhas() {
 // ============================================================
 let todasPropostas = []
 let filtroColab = 'TODOS'
+let filtroEtapa = ''
+let filtroLinhaCredito = ''
 let filtroSearch = ''
 let filtroDataIni = ''
 let filtroDataFim = ''
@@ -1172,13 +1338,13 @@ function renderPropostas() {
   <div class="card">
     <div class="card-title">📋 Propostas</div>
     <div class="filtros-row">
-      <button class="filtro-btn active" id="filtro-TODOS" style="background:#003366;color:#fff;border-color:#003366" onclick="setFiltroColab('TODOS')">Todos</button>
+      <button class="filtro-btn active" id="filtro-TODOS" style="background:#003366;color:#fff;border-color:#003366" onclick="setFiltroColab('TODOS')">Todos<span class="ajuda ajuda-dir" style="background:rgba(255,255,255,.25);color:#fff" data-ajuda="Mostra apenas propostas que já têm um responsável atribuído. As sem responsável aparecem nos filtros 'Novas' e 'N/A'." onclick="event.stopPropagation()">?</span></button>
       ${['ANDRESSA','ANNA','CAUÃ','CONRADO','JULIANO','LETICIA','MARCOS','PEDRO','RAIANE'].map(c => {
         const bg = COLABORADORES[c]
         const fg = getTextColor(bg)
         return `<button class="filtro-btn" id="filtro-${c}" style="background:${bg};color:${fg};border-color:${bg}" onclick="setFiltroColab('${c}')">${c}</button>`
       }).join('')}
-      <button class="filtro-btn" id="filtro-NOVAS" style="background:#f0fdf4;color:#166534;border:2px solid #86efac" onclick="setFiltroColab('NOVAS')">🆕 Novas</button>
+      <button class="filtro-btn" id="filtro-NOVAS" style="background:#f0fdf4;color:#166534;border:2px solid #86efac" onclick="setFiltroColab('NOVAS')">🆕 Novas<span class="ajuda" data-ajuda="Propostas sem responsável QUE AINDA ESTÃO EM ANDAMENTO. Não inclui Concedido, Excluído nem Recusado — são as que precisam de atribuição hoje." onclick="event.stopPropagation()">?</span></button>
       ${['VALÉRIO','N/A'].map(c => {
         const bg = COLABORADORES[c]
         const fg = getTextColor(bg)
@@ -1214,6 +1380,20 @@ function renderPropostas() {
             <span class="fa-sep">até</span>
             <input type="number" class="fa-input" id="fa-valor-max" placeholder="Máximo" value="${filtroValorMax}" oninput="aplicarFiltrosAvancados()"/>
           </div>
+        </div>
+        <div class="fa-campo">
+          <label>📊 Etapa</label>
+          <select class="fa-input" id="fa-etapa" onchange="aplicarFiltrosAvancados()">
+            <option value="">Todas as etapas</option>
+            ${opcoesEtapas()}
+          </select>
+        </div>
+        <div class="fa-campo">
+          <label>🏷️ Linha de Crédito</label>
+          <select class="fa-input" id="fa-linha" onchange="aplicarFiltrosAvancados()">
+            <option value="">Todas as linhas</option>
+            ${LINHAS_CREDITO.map(l => `<option value="${l}" ${filtroLinhaCredito===l?'selected':''}>${l}</option>`).join('')}
+          </select>
         </div>
       </div>
       <div class="fa-acoes">
@@ -1261,18 +1441,22 @@ function aplicarFiltrosData(rows) {
   if (filtroValorMax !== '' && !isNaN(Number(filtroValorMax))) {
     rows = rows.filter(p => valorNum(p) <= Number(filtroValorMax))
   }
+  if (filtroEtapa) {
+    rows = rows.filter(p => (p.etapa||'').trim() === filtroEtapa)
+  }
+  if (filtroLinhaCredito) {
+    rows = rows.filter(p => normalizarLinhaCredito(p.linha_credito) === filtroLinhaCredito)
+  }
   return rows
 }
 
 // Retorna as linhas conforme o filtro de colaborador ativo + filtros avançados (sem busca textual)
 function getLinhasFiltradas() {
-  const etapasFinalizadas = ['concedido','excluído','excluido','recusado']
   let rows = [...todasPropostas]
   if (filtroColab === 'NOVAS') {
     rows = rows.filter(p => {
       const resp = (p.responsavel||'N/A').toUpperCase().trim()
-      const etapa = (p.etapa||'').toLowerCase().trim()
-      return resp === 'N/A' && !etapasFinalizadas.includes(etapa)
+      return resp === 'N/A' && ehAtiva(p.etapa)
     })
   } else if (filtroColab === 'TODOS') {
     rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() !== 'N/A')
@@ -1312,7 +1496,23 @@ function contarFiltrosAtivos() {
   if (filtroDataFim) n++
   if (filtroValorMin !== '') n++
   if (filtroValorMax !== '') n++
+  if (filtroEtapa) n++
+  if (filtroLinhaCredito) n++
   return n
+}
+
+// Gera as opções de etapa a partir das propostas carregadas, ordenadas pelo funil
+function opcoesEtapas() {
+  const etapasSet = new Set()
+  todasPropostas.forEach(p => { const e = (p.etapa||'').trim(); if (e) etapasSet.add(e) })
+  const etapas = [...etapasSet].sort((a,b) => {
+    const pa = posicaoFunil(a), pb = posicaoFunil(b)
+    if (pa === -1 && pb === -1) return a.localeCompare(b,'pt-BR')
+    if (pa === -1) return 1
+    if (pb === -1) return -1
+    return pa - pb
+  })
+  return etapas.map(e => `<option value="${e}" ${filtroEtapa===e?'selected':''}>${e}</option>`).join('')
 }
 
 function atualizarBadgeFiltros() {
@@ -1333,6 +1533,8 @@ function aplicarFiltrosAvancados() {
   filtroDataFim = document.getElementById('fa-data-fim')?.value || ''
   filtroValorMin = document.getElementById('fa-valor-min')?.value || ''
   filtroValorMax = document.getElementById('fa-valor-max')?.value || ''
+  filtroEtapa = document.getElementById('fa-etapa')?.value || ''
+  filtroLinhaCredito = document.getElementById('fa-linha')?.value || ''
   renderTabelaPropostas()
   renderStatsPropostas()
   atualizarBadgeFiltros()
@@ -1341,7 +1543,8 @@ function aplicarFiltrosAvancados() {
 function limparFiltrosAvancados() {
   pagAtual = 1
   filtroDataIni = ''; filtroDataFim = ''; filtroValorMin = ''; filtroValorMax = ''
-  const ids = ['fa-data-ini','fa-data-fim','fa-valor-min','fa-valor-max']
+  filtroEtapa = ''; filtroLinhaCredito = ''
+  const ids = ['fa-data-ini','fa-data-fim','fa-valor-min','fa-valor-max','fa-etapa','fa-linha']
   ids.forEach(id => { const e = document.getElementById(id); if (e) e.value = '' })
   renderTabelaPropostas()
   renderStatsPropostas()
@@ -1361,94 +1564,60 @@ function renderStatsPropostas() {
   const el = document.getElementById('dashboard-propostas')
   if (!el) return
 
-  const etapasFinalizadas = ['concedido','excluído','excluido','recusado']
   const linhas = getLinhasFiltradas()
 
   // Contexto do filtro
-  let contexto = 'Visão geral — todos os responsáveis'
-  if (filtroColab === 'NOVAS') contexto = 'Propostas novas sem atribuição'
-  else if (filtroColab === 'N/A') contexto = 'Propostas sem responsável'
-  else if (filtroColab !== 'TODOS') contexto = `Responsável: ${filtroColab}`
+  let ctx = []
+  if (filtroColab === 'NOVAS') ctx.push('Propostas novas')
+  else if (filtroColab === 'N/A') ctx.push('Sem responsável')
+  else if (filtroColab !== 'TODOS') ctx.push(filtroColab)
+  else ctx.push('Todos os responsáveis')
+  if (filtroEtapa) ctx.push(filtroEtapa)
+  if (filtroLinhaCredito) ctx.push(filtroLinhaCredito)
+  const contexto = ctx.join(' · ')
 
   // Métricas
   const total = linhas.length
-  // Propostas em tratativa = ativas: exclui concedido, excluído e RECUSADO
-  const ativas = linhas.filter(p => !etapasFinalizadas.includes((p.etapa||'').toLowerCase().trim()))
+  const ativas = linhas.filter(p => ehAtiva(p.etapa))
   const totalAtivas = ativas.length
   const valorAtivo = ativas.reduce((s,p) => s + valorNum(p), 0)
   const valorTotal = linhas.reduce((s,p) => s + valorNum(p), 0)
   const concedidas = linhas.filter(p => (p.etapa||'').toLowerCase().trim() === 'concedido').length
-  const naAtrib = linhas.filter(p => !p.responsavel || p.responsavel === 'N/A').length
-  // Propostas ativas paradas há 15+ dias
-  const paradas = ativas.filter(p => {
-    const d = diasParados(p.na_etapa_desde)
-    return d !== null && d >= DIAS_LIMITE_PARADA
+  // Recusado + Excluído somados (100% juntos)
+  const naoConcedidas = linhas.filter(p => {
+    const e = (p.etapa||'').toLowerCase().trim()
+    return e === 'recusado' || e === 'excluído' || e === 'excluido'
   }).length
 
-  // Cards conforme o contexto
-  let cards = ''
-  if (filtroColab === 'TODOS' || filtroColab === 'N/A' || filtroColab === 'NOVAS') {
-    cards = `
-      <div class="dash-card accent-azul"><div class="dash-label">Total de Propostas</div><div class="dash-value">${total}</div></div>
-      <div class="dash-card accent-verde"><div class="dash-label">Propostas Ativas</div><div class="dash-value">${totalAtivas}</div><div class="dash-sub">em andamento</div></div>
-      <div class="dash-card accent-dourado"><div class="dash-label">Valor em Tratativa</div><div class="dash-value" style="font-size:19px">${formatValor(valorAtivo)}</div><div class="dash-sub">propostas ativas</div></div>
-      <div class="dash-card accent-roxo"><div class="dash-label">Valor Total</div><div class="dash-value" style="font-size:19px">${formatValor(valorTotal)}</div></div>`
-    if (filtroColab === 'TODOS') {
-      cards += `<div class="dash-card accent-vermelho"><div class="dash-label">Sem Atribuir</div><div class="dash-value">${naAtrib}</div></div>`
-    }
-    cards += `<div class="dash-card accent-parada"><div class="dash-label">⚠️ Paradas 15+ dias</div><div class="dash-value" style="color:${paradas>0?'#dc2626':'#16a34a'}">${paradas}</div><div class="dash-sub">propostas ativas</div></div>`
-  } else {
-    // Filtro por colaborador específico — foco nas propostas ATIVAS dele
-    cards = `
-      <div class="dash-card accent-azul"><div class="dash-label">Propostas de ${filtroColab}</div><div class="dash-value">${total}</div></div>
-      <div class="dash-card accent-verde"><div class="dash-label">Ativas</div><div class="dash-value">${totalAtivas}</div><div class="dash-sub">em tratativa agora</div></div>
-      <div class="dash-card accent-dourado"><div class="dash-label">Valor em Tratativa</div><div class="dash-value" style="font-size:19px">${formatValor(valorAtivo)}</div><div class="dash-sub">só propostas ativas</div></div>
-      <div class="dash-card accent-roxo"><div class="dash-label">Valor Total</div><div class="dash-value" style="font-size:19px">${formatValor(valorTotal)}</div><div class="dash-sub">todas as propostas</div></div>
-      <div class="dash-card accent-vermelho"><div class="dash-label">Concedidas</div><div class="dash-value">${concedidas}</div></div>
-      <div class="dash-card accent-parada"><div class="dash-label">⚠️ Paradas 15+ dias</div><div class="dash-value" style="color:${paradas>0?'#dc2626':'#16a34a'}">${paradas}</div><div class="dash-sub">precisam de atenção</div></div>`
-  }
-
-  // Gráfico de distribuição por etapa
-  const etapaCount = {}
-  linhas.forEach(p => {
-    const e = (p.etapa||'—').trim() || '—'
-    etapaCount[e] = (etapaCount[e]||0) + 1
+  // Propostas ativas paradas há 15+ dias
+  const paradasList = ativas.filter(p => {
+    const d = diasParados(p.na_etapa_desde)
+    return d !== null && d >= DIAS_LIMITE_PARADA
   })
-  const etapasOrd = Object.entries(etapaCount).sort((a,b) => b[1]-a[1])
-  const maxCount = etapasOrd.length ? etapasOrd[0][1] : 1
+  const paradas = paradasList.length
 
-  const corEtapa = (etapa) => {
-    const e = etapa.toLowerCase()
-    if (e === 'concedido') return '#16a34a'
-    if (e === 'excluído' || e === 'excluido') return '#dc2626'
-    if (e === 'recusado') return '#d97706'
-    return '#3b82f6'
-  }
+  // Média de dias parados (só ativas com data válida)
+  const diasArr = ativas.map(p => diasParados(p.na_etapa_desde)).filter(d => d !== null)
+  const mediaDias = diasArr.length ? Math.round(diasArr.reduce((s,d) => s+d, 0) / diasArr.length) : 0
 
-  let grafico = ''
-  if (total > 0) {
-    grafico = `
-    <div class="etapa-chart">
-      <div class="etapa-chart-title">📊 Distribuição por Etapa</div>
-      ${etapasOrd.map(([etapa, count]) => {
-        const pct = Math.round((count/maxCount)*100)
-        const pctTotal = Math.round((count/total)*100)
-        return `<div class="etapa-bar-row">
-          <div class="etapa-bar-label">${etapa}</div>
-          <div class="etapa-bar-track"><div class="etapa-bar-fill" style="width:${pct}%;background:${corEtapa(etapa)}"></div></div>
-          <div class="etapa-bar-count">${count} <small>(${pctTotal}%)</small></div>
-        </div>`
-      }).join('')}
-    </div>`
-  }
+  // Cards — sempre acompanham os filtros ativos
+  const ehGeral = (filtroColab === 'TODOS' || filtroColab === 'N/A' || filtroColab === 'NOVAS')
+  const rotuloTotal = ehGeral ? 'Total de Propostas' : `Propostas de ${filtroColab}`
+
+  let cards = `
+    <div class="dash-card accent-azul"><div class="dash-label">${rotuloTotal}</div><div class="dash-value">${total}</div></div>
+    <div class="dash-card accent-verde"><div class="dash-label">Ativas</div><div class="dash-value">${totalAtivas}</div><div class="dash-sub">em tratativa</div></div>
+    <div class="dash-card accent-dourado"><div class="dash-label">Valor em Tratativa<span class="ajuda ajuda-baixo" data-ajuda="Soma do valor apenas das propostas ATIVAS (em andamento). Não inclui Concedido, Recusado nem Excluído.">?</span></div><div class="dash-value" style="font-size:19px">${formatValor(valorAtivo)}</div><div class="dash-sub">só propostas ativas</div></div>
+    <div class="dash-card accent-roxo"><div class="dash-label">Valor Total<span class="ajuda ajuda-baixo" data-ajuda="Soma do valor de TODAS as propostas do filtro atual, incluindo as já finalizadas.">?</span></div><div class="dash-value" style="font-size:19px">${formatValor(valorTotal)}</div><div class="dash-sub">todas as propostas</div></div>
+    <div class="dash-card accent-parada"><div class="dash-label">⚠️ Paradas 15+ dias<span class="ajuda ajuda-baixo" data-ajuda="Propostas ativas que estão há 15 dias ou mais na mesma etapa sem avançar. Só conta propostas em andamento.">?</span></div><div class="dash-value" style="color:${paradas>0?'#dc2626':'#16a34a'}">${paradas}</div><div class="dash-sub">propostas ativas</div></div>
+    <div class="dash-card accent-cinza"><div class="dash-label">Média de Dias Parados<span class="ajuda ajuda-baixo ajuda-esq" data-ajuda="Média de quantos dias as propostas ativas estão paradas na etapa atual. Ajuda a medir a velocidade de andamento.">?</span></div><div class="dash-value">${mediaDias}<span style="font-size:14px;font-weight:600;color:#9ca3af"> dias</span></div><div class="dash-sub">média das ativas na etapa</div></div>`
 
   el.innerHTML = `
     <div class="dash-header">
       <div class="dash-title">📈 Painel de Indicadores</div>
       <div class="dash-context">${contexto}</div>
     </div>
-    <div class="dash-grid">${cards}</div>
-    ${grafico}`
+    <div class="dash-grid">${cards}</div>`
 }
 
 function setFiltroColab(c) {
@@ -1480,6 +1649,7 @@ function renderTabelaPropostas() {
   const cols = [
     {key:'responsavel', label:'Responsável'},
     {key:'codigo', label:'Código da Operação'},
+    {key:'linha_credito', label:'Linha'},
     {key:'etapa', label:'Etapa'},
     {key:'valor', label:'Valor', align:'right'},
     {key:'na_etapa_desde', label:'Na Etapa Desde'},
@@ -1551,6 +1721,7 @@ function renderTabelaPropostas() {
       <td class="check-col"><input type="checkbox" class="row-check" ${estaSel?'checked':''} onclick="toggleSelecionada('${p.codigo}', this.checked)"/></td>
       ${respCell}
       <td class="td-cnpj" style="font-weight:700">${p.codigo||'—'}</td>
+      <td>${linhaBadge(p.linha_credito)}</td>
       <td class="td-etapa">${etapaBadge(p.etapa)}</td>
       <td class="td-valor">${formatValor(p.valor)}</td>
       ${celulaData(p)}
@@ -1943,10 +2114,9 @@ function exportarExcel() {
   const rows = getLinhasVisiveis()
   if (!rows.length) { showToast('Nenhuma proposta para exportar', 'error'); return }
 
-  const ETAPAS_FIN = ['concedido','excluído','excluido','recusado']
   const dados = rows.map(p => {
     const dias = diasParados(p.na_etapa_desde)
-    const ativa = !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim())
+    const ativa = ehAtiva(p.etapa)
     return {
       'Responsável': p.responsavel || 'N/A',
       'Código da Operação': p.codigo || '',
@@ -1967,7 +2137,7 @@ function exportarExcel() {
 
   // Aba de resumo
   const totalValor = rows.reduce((s,p) => s + valorNum(p), 0)
-  const ativas = rows.filter(p => !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim()))
+  const ativas = rows.filter(p => ehAtiva(p.etapa))
   const paradas = ativas.filter(p => { const d = diasParados(p.na_etapa_desde); return d !== null && d >= DIAS_LIMITE_PARADA })
   const resumo = [
     { Indicador: 'Data da exportação', Valor: new Date().toLocaleString('pt-BR') },
@@ -1992,15 +2162,14 @@ function exportarPDF() {
   const rows = getLinhasVisiveis()
   if (!rows.length) { showToast('Nenhuma proposta para exportar', 'error'); return }
 
-  const ETAPAS_FIN = ['concedido','excluído','excluido','recusado']
-  const ativas = rows.filter(p => !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim()))
+  const ativas = rows.filter(p => ehAtiva(p.etapa))
   const paradas = ativas.filter(p => { const d = diasParados(p.na_etapa_desde); return d !== null && d >= DIAS_LIMITE_PARADA })
   const totalValor = rows.reduce((s,p) => s + valorNum(p), 0)
   const valorAtivo = ativas.reduce((s,p) => s + valorNum(p), 0)
 
   const linhas = rows.map(p => {
     const dias = diasParados(p.na_etapa_desde)
-    const ativa = !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim())
+    const ativa = ehAtiva(p.etapa)
     const parada = ativa && dias !== null && dias >= DIAS_LIMITE_PARADA
     return `<tr class="${parada ? 'parada' : ''}">
       <td>${p.responsavel || 'N/A'}</td>
@@ -2091,43 +2260,61 @@ async function carregarPainel() {
 
 function renderPainel() {
   const el = document.getElementById('view-painel')
-  const props = dadosPainel.propostas
-  const ETAPAS_FIN = ['concedido','excluído','excluido','recusado']
-
-  if (!props.length) {
+  if (!dadosPainel.propostas.length) {
     el.innerHTML = `<div class="card"><div class="painel-empty">📭 Nenhuma proposta processada ainda.<br>Processe as planilhas na aba "⚙ Processar" para ver os indicadores.</div></div>`
     return
   }
 
-  const ativas = props.filter(p => !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim()))
-  const paradas = ativas.filter(p => { const d = diasParados(p.na_etapa_desde); return d !== null && d >= DIAS_LIMITE_PARADA })
-  const valorAtivo = ativas.reduce((s,p) => s + valorNum(p), 0)
-  const valorTotal = props.reduce((s,p) => s + valorNum(p), 0)
-  const concedidas = props.filter(p => (p.etapa||'').toLowerCase().trim() === 'concedido')
-  const valorConcedido = concedidas.reduce((s,p) => s + valorNum(p), 0)
-  const semResp = props.filter(p => !p.responsavel || p.responsavel === 'N/A').length
+  const d = calcularDadosPainel()
+  const props = d.props
+  const totalP = props.length || 1
+
+  // ══ BARRA DE FILTROS DO PAINEL ══
+  const colabsDisponiveis = [...new Set(dadosPainel.propostas.map(p => (p.responsavel||'N/A').toUpperCase().trim()))]
+    .filter(c => c !== 'N/A').sort()
+  const etapasDisponiveis = [...new Set(dadosPainel.propostas.map(p => (p.etapa||'').trim()).filter(Boolean))]
+    .sort((a,b) => { const pa=posicaoFunil(a), pb=posicaoFunil(b); if(pa===-1&&pb===-1) return a.localeCompare(b,'pt-BR'); if(pa===-1) return 1; if(pb===-1) return -1; return pa-pb })
+
+  const filtrosPainel = `
+    <div class="painel-filtros">
+      <select class="fa-input" onchange="painelFiltroColab=this.value; renderPainel()">
+        <option value="">👤 Todos os responsáveis</option>
+        ${colabsDisponiveis.map(c => `<option value="${c}" ${painelFiltroColab===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <select class="fa-input" onchange="painelFiltroEtapa=this.value; renderPainel()">
+        <option value="">📊 Todas as etapas</option>
+        ${etapasDisponiveis.map(e => `<option value="${e}" ${painelFiltroEtapa===e?'selected':''}>${e}</option>`).join('')}
+      </select>
+      <select class="fa-input" onchange="painelFiltroLinha=this.value; renderPainel()">
+        <option value="">🏷️ Todas as linhas</option>
+        ${LINHAS_CREDITO.map(l => `<option value="${l}" ${painelFiltroLinha===l?'selected':''}>${l}</option>`).join('')}
+      </select>
+      ${(painelFiltroColab||painelFiltroEtapa||painelFiltroLinha) ? `<button class="btn btn-secondary btn-sm" onclick="painelFiltroColab='';painelFiltroEtapa='';painelFiltroLinha='';renderPainel()">✕ Limpar</button>` : ''}
+    </div>`
 
   // ══ CARDS DE RESUMO ══
+  const pctConc = ((d.concedidas.length/totalP)*100).toFixed(1)
+  const pctNaoConc = ((d.naoConcedidas.length/totalP)*100).toFixed(1)
   const resumo = `
     <div class="dash-grid">
       <div class="dash-card accent-azul"><div class="dash-label">Total de Propostas</div><div class="dash-value">${props.length}</div></div>
-      <div class="dash-card accent-verde"><div class="dash-label">Em Tratativa</div><div class="dash-value">${ativas.length}</div><div class="dash-sub">${formatValor(valorAtivo)}</div></div>
-      <div class="dash-card accent-roxo"><div class="dash-label">Concedidas</div><div class="dash-value">${concedidas.length}</div><div class="dash-sub">${formatValor(valorConcedido)}</div></div>
-      <div class="dash-card accent-parada"><div class="dash-label">⚠️ Paradas 15+ dias</div><div class="dash-value" style="color:${paradas.length>0?'#dc2626':'#16a34a'}">${paradas.length}</div><div class="dash-sub">precisam de atenção</div></div>
-      <div class="dash-card accent-vermelho"><div class="dash-label">Sem Responsável</div><div class="dash-value" style="color:${semResp>0?'#dc2626':'#16a34a'}">${semResp}</div></div>
+      <div class="dash-card accent-verde"><div class="dash-label">Em Tratativa</div><div class="dash-value">${d.ativas.length}</div><div class="dash-sub">${formatValor(d.valorAtivo)}</div></div>
+      <div class="dash-card accent-roxo"><div class="dash-label">Concedidas</div><div class="dash-value">${d.concedidas.length}</div><div class="dash-sub">${formatValor(d.valorConcedido)} · ${pctConc}%</div></div>
+      <div class="dash-card accent-vermelho"><div class="dash-label">Recusadas + Excluídas<span class="ajuda ajuda-baixo" data-ajuda="Recusado e Excluído são somados juntos como propostas que não seguiram adiante. O percentual é sobre o total de propostas do filtro.">?</span></div><div class="dash-value">${d.naoConcedidas.length}</div><div class="dash-sub">${formatValor(d.valorNaoConcedido)} · ${pctNaoConc}%</div></div>
+      <div class="dash-card accent-parada"><div class="dash-label">⚠️ Paradas 15+ dias<span class="ajuda ajuda-baixo" data-ajuda="Propostas ativas há 15 dias ou mais na mesma etapa. O detalhamento aparece na seção 'Propostas Mais Paradas' abaixo.">?</span></div><div class="dash-value" style="color:${d.paradas.length>0?'#dc2626':'#16a34a'}">${d.paradas.length}</div><div class="dash-sub">precisam de atenção</div></div>
+      <div class="dash-card accent-cinza"><div class="dash-label">Média de Dias Parados<span class="ajuda ajuda-baixo ajuda-esq" data-ajuda="Média de dias que as propostas ativas estão paradas na etapa. Quanto menor, mais ágil o andamento.">?</span></div><div class="dash-value">${d.mediaDias}<span style="font-size:14px;font-weight:600;color:#9ca3af"> dias</span></div><div class="dash-sub">média das ativas</div></div>
     </div>`
 
-  // ══ 4.2 FUNIL POR ETAPA ══
-  const etapaMap = {}
-  props.forEach(p => {
-    const e = (p.etapa||'—').trim() || '—'
-    if (!etapaMap[e]) etapaMap[e] = { count: 0, valor: 0 }
-    etapaMap[e].count++
-    etapaMap[e].valor += valorNum(p)
-  })
-  const etapasOrd = Object.entries(etapaMap).sort((a,b) => b[1].count - a[1].count)
-  const maxEtapa = etapasOrd.length ? etapasOrd[0][1].count : 1
+  // ══ FUNIL — ordem oficial de avanço ══
+  const funilRows = FUNIL_ETAPAS
+    .map(etapa => ({ etapa, d: d.etapaMap[etapa] || null }))
+    .filter(x => x.d)
+  // Etapas que não estão no funil oficial (ex: Concedido, Recusado, Excluído, Análise Cadastral já está)
+  const outras = Object.entries(d.etapaMap)
+    .filter(([e]) => posicaoFunil(e) === -1)
+    .sort((a,b) => b[1].count - a[1].count)
 
+  const maxFunil = Math.max(1, ...Object.values(d.etapaMap).map(x => x.count))
   const corEtapaFunil = (etapa) => {
     const e = etapa.toLowerCase()
     if (e === 'concedido') return '#16a34a'
@@ -2135,76 +2322,73 @@ function renderPainel() {
     if (e === 'recusado') return '#d97706'
     return '#3b82f6'
   }
+  const funilBar = (etapa, dd) => {
+    const pct = Math.round((dd.count/maxFunil)*100)
+    const pctTotal = ((dd.count/totalP)*100).toFixed(1)
+    return `<div class="funil-row">
+      <div class="funil-label">${etapa}</div>
+      <div class="funil-bar-wrap">
+        <div class="funil-bar" style="width:${pct}%;background:${corEtapaFunil(etapa)}">${dd.count}</div>
+        <div class="funil-pct">${pctTotal}%</div>
+      </div>
+      <div class="funil-valor">${formatValor(dd.valor)}</div>
+    </div>`
+  }
 
   const funil = `
     <div class="painel-secao">
       <div class="painel-secao-titulo">🔻 Funil de Propostas por Etapa</div>
-      <div class="painel-secao-sub">Distribuição de todas as propostas e o valor acumulado em cada etapa</div>
+      <div class="painel-secao-sub">Etapas na ordem oficial de avanço, com quantidade, percentual e valor acumulado</div>
       <div class="funil-wrap">
-        ${etapasOrd.map(([etapa, d]) => {
-          const pct = Math.round((d.count/maxEtapa)*100)
-          const pctTotal = ((d.count/props.length)*100).toFixed(1)
-          return `<div class="funil-row">
-            <div class="funil-label">${etapa}</div>
-            <div class="funil-bar-wrap">
-              <div class="funil-bar" style="width:${pct}%;background:${corEtapaFunil(etapa)}">${d.count}</div>
-              <div class="funil-pct">${pctTotal}%</div>
-            </div>
-            <div class="funil-valor">${formatValor(d.valor)}</div>
-          </div>`
-        }).join('')}
+        ${funilRows.map(x => funilBar(x.etapa, x.d)).join('')}
+        ${outras.length ? `<div class="funil-sep">Outras etapas / finalizadas</div>` : ''}
+        ${outras.map(([e, dd]) => funilBar(e, dd)).join('')}
       </div>
     </div>`
 
-  // ══ 4.3 CARGA POR RESPONSÁVEL ══
-  const cargaMap = {}
-  props.forEach(p => {
-    const r = (p.responsavel || 'N/A').toUpperCase().trim()
-    if (!cargaMap[r]) cargaMap[r] = { total: 0, ativas: 0, paradas: 0, valorAtivo: 0 }
-    cargaMap[r].total++
-    const ehAtiva = !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim())
-    if (ehAtiva) {
-      cargaMap[r].ativas++
-      cargaMap[r].valorAtivo += valorNum(p)
-      const d = diasParados(p.na_etapa_desde)
-      if (d !== null && d >= DIAS_LIMITE_PARADA) cargaMap[r].paradas++
-    }
-  })
-  const cargaOrd = Object.entries(cargaMap)
-    .filter(([r]) => r !== 'N/A')
-    .sort((a,b) => b[1].ativas - a[1].ativas)
+  // ══ DISTRIBUIÇÃO POR LINHA DE CRÉDITO ══
+  const linhaEntries = Object.entries(d.linhaMap).sort((a,b) => b[1].count - a[1].count)
+  const distLinha = linhaEntries.length ? `
+    <div class="painel-secao">
+      <div class="painel-secao-titulo">🏷️ Distribuição por Linha de Crédito</div>
+      <div class="painel-secao-sub">Quantas propostas e o valor de cada linha</div>
+      <div class="linha-cards">
+        ${linhaEntries.map(([linha, dd]) => {
+          const cor = corLinhaCredito(linha === '(sem linha)' ? '' : linha)
+          const pct = ((dd.count/totalP)*100).toFixed(1)
+          return `<div class="linha-card" style="border-color:${cor}55">
+            <div class="linha-card-top" style="background:${cor}12;color:${cor}">${linha}</div>
+            <div class="linha-card-num">${dd.count}<span class="linha-card-pct">${pct}%</span></div>
+            <div class="linha-card-val">${formatValor(dd.valor)}</div>
+          </div>`
+        }).join('')}
+      </div>
+    </div>` : ''
 
+  // ══ CARGA POR RESPONSÁVEL ══
+  const cargaOrd = Object.entries(d.cargaMap).filter(([r]) => r !== 'N/A').sort((a,b) => b[1].ativas - a[1].ativas)
   const carga = `
     <div class="painel-secao">
       <div class="painel-secao-titulo">👥 Carga de Trabalho por Responsável</div>
       <div class="painel-secao-sub">Ordenado por propostas ativas (em tratativa)</div>
       <div class="carga-grid">
-        ${cargaOrd.map(([nome, d]) => {
-          const cor = getCorColab(nome)
-          const fg = getTextColor(cor)
+        ${cargaOrd.map(([nome, dd]) => {
+          const cor = getCorColab(nome); const fg = getTextColor(cor)
           return `<div class="carga-card" style="--cor-colab:${cor}">
             <span class="carga-avatar" style="background:${cor};color:${fg}">${getIniciais(nome)}</span>
             <div class="carga-info">
               <div class="carga-nome">${nome}</div>
-              <div class="carga-nums">
-                <span><b>${d.ativas}</b> ativas</span>
-                <span style="color:#9ca3af">de ${d.total} total</span>
-              </div>
-              <div class="carga-valor">${formatValor(d.valorAtivo)}</div>
-              ${d.paradas > 0 ? `<span class="carga-alerta">⚠️ ${d.paradas} parada${d.paradas>1?'s':''}</span>` : ''}
+              <div class="carga-nums"><span><b>${dd.ativas}</b> ativas</span><span style="color:#9ca3af">de ${dd.total} total</span></div>
+              <div class="carga-valor">${formatValor(dd.valorAtivo)}</div>
+              ${dd.paradas > 0 ? `<span class="carga-alerta">⚠️ ${dd.paradas} parada${dd.paradas>1?'s':''}</span>` : ''}
             </div>
           </div>`
         }).join('')}
       </div>
     </div>`
 
-  // ══ 4.4 RANKING DE PROPOSTAS PARADAS ══
-  const rankParadas = ativas
-    .map(p => ({ ...p, dias: diasParados(p.na_etapa_desde) }))
-    .filter(p => p.dias !== null && p.dias >= DIAS_LIMITE_PARADA)
-    .sort((a,b) => b.dias - a.dias)
-    .slice(0, 15)
-
+  // ══ RANKING DE PARADAS — com observação ══
+  const rankParadas = d.rankParadas.slice(0, 15)
   const ranking = `
     <div class="painel-secao">
       <div class="painel-secao-titulo">⏱️ Propostas Mais Paradas</div>
@@ -2212,13 +2396,11 @@ function renderPainel() {
       ${rankParadas.length === 0
         ? `<div class="painel-empty">✅ Nenhuma proposta parada há mais de ${DIAS_LIMITE_PARADA} dias. Tudo em dia!</div>`
         : `<table class="rank-table">
-            <thead><tr>
-              <th>#</th><th>Responsável</th><th>Código</th><th>Etapa</th><th>Valor</th><th>Parada há</th>
-            </tr></thead>
+            <thead><tr><th>#</th><th>Responsável</th><th>Código</th><th>Etapa</th><th>Valor</th><th>Parada há</th><th>Observação</th></tr></thead>
             <tbody>
               ${rankParadas.map((p, i) => {
-                const cor = getCorColab(p.responsavel || 'N/A')
-                const fg = getTextColor(cor)
+                const cor = getCorColab(p.responsavel || 'N/A'); const fg = getTextColor(cor)
+                const obs = (p.observacao || '').trim()
                 return `<tr>
                   <td class="rank-pos">${i+1}</td>
                   <td><span class="resp-avatar" style="background:${cor};color:${fg};width:24px;height:24px;font-size:9px">${getIniciais(p.responsavel||'N/A')}</span> <span style="font-size:12px;font-weight:600">${p.responsavel||'N/A'}</span></td>
@@ -2226,6 +2408,7 @@ function renderPainel() {
                   <td>${etapaBadge(p.etapa)}</td>
                   <td style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">${formatValor(p.valor)}</td>
                   <td class="rank-dias"><span class="rank-dias-badge">${p.dias} dias</span></td>
+                  <td style="font-size:11.5px;color:${obs?'#374151':'#cbd5e1'};max-width:220px">${obs || '—'}</td>
                 </tr>`
               }).join('')}
             </tbody>
@@ -2233,32 +2416,8 @@ function renderPainel() {
       }
     </div>`
 
-  // ══ 4.5 EVOLUÇÃO AO LONGO DO TEMPO ══
-  const hist = [...dadosPainel.historico].reverse()
-  const maxHist = hist.length ? Math.max(...hist.map(h => h.total_propostas || 0)) : 1
-
-  const evolucao = hist.length < 2
-    ? `<div class="painel-secao">
-        <div class="painel-secao-titulo">📈 Evolução dos Processamentos</div>
-        <div class="painel-empty">Ainda não há processamentos suficientes para mostrar a evolução.<br>Processe as planilhas por alguns dias para ver o histórico aqui.</div>
-      </div>`
-    : `<div class="painel-secao">
-        <div class="painel-secao-titulo">📈 Evolução dos Processamentos</div>
-        <div class="painel-secao-sub">Total de propostas processadas nos últimos ${hist.length} processamentos</div>
-        <div class="evo-wrap">
-          ${hist.map(h => {
-            const val = h.total_propostas || 0
-            const altura = maxHist ? Math.max((val/maxHist)*100, 2) : 2
-            const dt = new Date(h.criado_em)
-            const label = dt.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})
-            return `<div class="evo-col">
-              <div class="evo-val">${val}</div>
-              <div class="evo-bar" style="height:${altura}%" title="${val} propostas em ${label}"></div>
-              <div class="evo-data">${label}</div>
-            </div>`
-          }).join('')}
-        </div>
-      </div>`
+  // ══ EVOLUÇÃO — propostas novas por dia (5 dias antes do último processamento) ══
+  const evolucao = renderEvolucao()
 
   el.innerHTML = `
     <div class="card">
@@ -2270,23 +2429,99 @@ function renderPainel() {
           <button class="btn btn-secondary btn-sm" onclick="carregarPainel()">↺ Atualizar</button>
         </div>
       </div>
+      ${filtrosPainel}
       ${resumo}
     </div>
     ${funil}
+    ${distLinha}
     ${carga}
     ${ranking}
     ${evolucao}`
 }
 
+// Evolução: conta propostas por data de "Na Etapa Desde" nos 5 dias anteriores ao último processamento
+function renderEvolucao() {
+  const props = dadosPainel.propostas
+  // Data de referência: último processamento (ou hoje)
+  let dataRef = new Date()
+  if (dadosPainel.historico.length) {
+    const ult = dadosPainel.historico[0].criado_em
+    if (ult) dataRef = new Date(ult)
+  }
+  dataRef.setHours(0,0,0,0)
+
+  // Monta os últimos 5 dias
+  const dias = []
+  for (let i = 4; i >= 0; i--) {
+    const d = new Date(dataRef)
+    d.setDate(d.getDate() - i)
+    const iso = d.toISOString().split('T')[0]
+    dias.push({ iso, label: d.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'}), count: 0, valor: 0 })
+  }
+
+  // Conta propostas cuja na_etapa_desde cai em cada dia
+  props.forEach(p => {
+    if (!p.na_etapa_desde) return
+    const dt = String(p.na_etapa_desde).split('T')[0]
+    const dia = dias.find(x => x.iso === dt)
+    if (dia) { dia.count++; dia.valor += valorNum(p) }
+  })
+
+  const totalPeriodo = dias.reduce((s,d) => s + d.count, 0)
+  const mediaPeriodo = Math.round(totalPeriodo / 5)
+  const maxDia = Math.max(1, ...dias.map(d => d.count))
+
+  return `
+    <div class="painel-secao">
+      <div class="painel-secao-titulo">📈 Propostas Novas por Dia</div>
+      <div class="painel-secao-sub">Propostas criadas nos 5 dias anteriores ao último processamento (${dataRef.toLocaleDateString('pt-BR')})</div>
+      <div class="evo-resumo">
+        <div class="evo-resumo-item"><span class="evo-resumo-num">${totalPeriodo}</span><span class="evo-resumo-lbl">no período (5 dias)</span></div>
+        <div class="evo-resumo-item"><span class="evo-resumo-num">${mediaPeriodo}</span><span class="evo-resumo-lbl">média por dia</span></div>
+      </div>
+      <div class="evo-wrap">
+        ${dias.map(d => {
+          const altura = Math.max((d.count/maxDia)*100, 2)
+          return `<div class="evo-col">
+            <div class="evo-val">${d.count}</div>
+            <div class="evo-bar" style="height:${altura}%" title="${d.count} propostas · ${formatValor(d.valor)} em ${d.label}"></div>
+            <div class="evo-data">${d.label}</div>
+          </div>`
+        }).join('')}
+      </div>
+    </div>`
+}
 
 // ── Exportação do Painel Gerencial ──
+// Filtros próprios do Painel Gerencial
+let painelFiltroColab = ''
+let painelFiltroEtapa = ''
+let painelFiltroLinha = ''
+
+function propostasPainelFiltradas() {
+  let props = [...dadosPainel.propostas]
+  if (painelFiltroColab) props = props.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === painelFiltroColab)
+  if (painelFiltroEtapa) props = props.filter(p => (p.etapa||'').trim() === painelFiltroEtapa)
+  if (painelFiltroLinha) props = props.filter(p => normalizarLinhaCredito(p.linha_credito) === painelFiltroLinha)
+  return props
+}
+
 function calcularDadosPainel() {
-  const props = dadosPainel.propostas
-  const ETAPAS_FIN = ['concedido','excluído','excluido','recusado']
-  const ativas = props.filter(p => !ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim()))
+  const props = propostasPainelFiltradas()
+  const ativas = props.filter(p => ehAtiva(p.etapa))
   const paradas = ativas.filter(p => { const d = diasParados(p.na_etapa_desde); return d !== null && d >= DIAS_LIMITE_PARADA })
   const concedidas = props.filter(p => (p.etapa||'').toLowerCase().trim() === 'concedido')
+  // Recusado + Excluído somados (100% juntos)
+  const naoConcedidas = props.filter(p => {
+    const e = (p.etapa||'').toLowerCase().trim()
+    return e === 'recusado' || e === 'excluído' || e === 'excluido'
+  })
 
+  // Média de dias parados (ativas com data válida)
+  const diasArr = ativas.map(p => diasParados(p.na_etapa_desde)).filter(d => d !== null)
+  const mediaDias = diasArr.length ? Math.round(diasArr.reduce((s,d) => s+d, 0) / diasArr.length) : 0
+
+  // Distribuição por etapa (com valor)
   const etapaMap = {}
   props.forEach(p => {
     const e = (p.etapa||'—').trim() || '—'
@@ -2295,6 +2530,7 @@ function calcularDadosPainel() {
     etapaMap[e].valor += valorNum(p)
   })
 
+  // Carga por responsável
   const cargaMap = {}
   props.forEach(p => {
     const r = (p.responsavel || 'N/A').toUpperCase().trim()
@@ -2302,7 +2538,7 @@ function calcularDadosPainel() {
     cargaMap[r].total++
     cargaMap[r].valorTotal += valorNum(p)
     if ((p.etapa||'').toLowerCase().trim() === 'concedido') cargaMap[r].concedidas++
-    if (!ETAPAS_FIN.includes((p.etapa||'').toLowerCase().trim())) {
+    if (ehAtiva(p.etapa)) {
       cargaMap[r].ativas++
       cargaMap[r].valorAtivo += valorNum(p)
       const d = diasParados(p.na_etapa_desde)
@@ -2315,11 +2551,21 @@ function calcularDadosPainel() {
     .filter(p => p.dias !== null && p.dias >= DIAS_LIMITE_PARADA)
     .sort((a,b) => b.dias - a.dias)
 
+  // Distribuição por linha de crédito
+  const linhaMap = {}
+  props.forEach(p => {
+    const l = normalizarLinhaCredito(p.linha_credito) || '(sem linha)'
+    if (!linhaMap[l]) linhaMap[l] = { count: 0, valor: 0 }
+    linhaMap[l].count++
+    linhaMap[l].valor += valorNum(p)
+  })
+
   return {
-    props, ativas, paradas, concedidas, etapaMap, cargaMap, rankParadas,
+    props, ativas, paradas, concedidas, naoConcedidas, etapaMap, cargaMap, rankParadas, linhaMap, mediaDias,
     valorTotal: props.reduce((s,p) => s + valorNum(p), 0),
     valorAtivo: ativas.reduce((s,p) => s + valorNum(p), 0),
     valorConcedido: concedidas.reduce((s,p) => s + valorNum(p), 0),
+    valorNaoConcedido: naoConcedidas.reduce((s,p) => s + valorNum(p), 0),
     semResp: props.filter(p => !p.responsavel || p.responsavel === 'N/A').length,
   }
 }
@@ -2335,11 +2581,13 @@ function exportarPainelExcel() {
     { Indicador: 'Total de propostas', Valor: d.props.length },
     { Indicador: 'Em tratativa (ativas)', Valor: d.ativas.length },
     { Indicador: 'Concedidas', Valor: d.concedidas.length },
+    { Indicador: 'Recusadas + Excluídas', Valor: d.naoConcedidas.length },
     { Indicador: 'Paradas 15+ dias', Valor: d.paradas.length },
-    { Indicador: 'Sem responsável', Valor: d.semResp },
+    { Indicador: 'Média de dias parados', Valor: d.mediaDias },
     { Indicador: 'Valor total', Valor: d.valorTotal },
     { Indicador: 'Valor em tratativa', Valor: d.valorAtivo },
     { Indicador: 'Valor concedido', Valor: d.valorConcedido },
+    { Indicador: 'Valor recusado + excluído', Valor: d.valorNaoConcedido },
   ]
   const wsR = XLSX.utils.json_to_sheet(resumo)
   wsR['!cols'] = [{wch:26},{wch:24}]
@@ -2472,8 +2720,9 @@ function exportarPainelPDF() {
     <div class="card"><div class="lbl">Total de Propostas</div><div class="val">${d.props.length}</div></div>
     <div class="card verde"><div class="lbl">Em Tratativa</div><div class="val">${d.ativas.length}</div><div class="sub">${formatValor(d.valorAtivo)}</div></div>
     <div class="card verde"><div class="lbl">Concedidas</div><div class="val">${d.concedidas.length}</div><div class="sub">${formatValor(d.valorConcedido)}</div></div>
+    <div class="card"><div class="lbl">Recusadas + Excluídas</div><div class="val">${d.naoConcedidas.length}</div><div class="sub">${formatValor(d.valorNaoConcedido)}</div></div>
     <div class="card ${d.paradas.length?'alerta':''}"><div class="lbl">Paradas ${DIAS_LIMITE_PARADA}+ dias</div><div class="val">${d.paradas.length}</div><div class="sub">precisam de atenção</div></div>
-    <div class="card ${d.semResp?'alerta':''}"><div class="lbl">Sem Responsável</div><div class="val">${d.semResp}</div></div>
+    <div class="card"><div class="lbl">Média Dias Parados</div><div class="val">${d.mediaDias}</div><div class="sub">ativas na etapa</div></div>
     <div class="card"><div class="lbl">Valor Total</div><div class="val" style="font-size:13px">${formatValor(d.valorTotal)}</div></div>
   </div>
 
