@@ -151,41 +151,43 @@
 
   /* ══ TOOLTIPS DE AJUDA ══ */
   .ajuda { position: relative; display: inline-flex; align-items: center; justify-content: center;
-    width: 15px; height: 15px; border-radius: 50%; background: rgba(100,116,139,.18);
+    width: 15px; height: 15px; min-width: 15px; border-radius: 50%; background: rgba(100,116,139,.2);
     color: #64748b; font-size: 10px; font-weight: 700; cursor: help; margin-left: 5px;
-    vertical-align: middle; transition: all .12s; flex-shrink: 0; font-family: 'IBM Plex Sans', sans-serif; }
-  .ajuda:hover { background: var(--azul); color: #fff; transform: scale(1.12); }
+    vertical-align: middle; transition: background .12s, color .12s; flex-shrink: 0;
+    font-family: 'IBM Plex Sans', sans-serif; line-height: 1; }
+  .ajuda:hover { background: var(--azul); color: #fff; }
   .ajuda::after {
     content: attr(data-ajuda);
-    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
+    position: absolute; bottom: calc(100% + 9px); left: 50%;
+    margin-left: -125px; width: 250px;
     background: #1e293b; color: #f1f5f9; font-size: 11.5px; font-weight: 400; line-height: 1.5;
-    padding: 9px 12px; border-radius: 8px; width: max-content; max-width: 260px;
-    text-align: left; white-space: normal; box-shadow: 0 8px 24px rgba(0,0,0,.28);
-    opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .15s, transform .15s;
-    z-index: 5000; }
+    padding: 9px 12px; border-radius: 8px;
+    text-align: left; white-space: normal; box-shadow: 0 6px 20px rgba(0,0,0,.3);
+    opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .14s;
+    z-index: 9000; }
   .ajuda::before {
-    content: ''; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%);
+    content: ''; position: absolute; bottom: calc(100% + 3px); left: 50%; margin-left: -6px;
     border: 6px solid transparent; border-top-color: #1e293b;
-    opacity: 0; visibility: hidden; transition: opacity .15s; z-index: 5001; }
+    opacity: 0; visibility: hidden; transition: opacity .14s; z-index: 9001; }
   .ajuda:hover::after, .ajuda:hover::before { opacity: 1; visibility: visible; }
-  .ajuda:hover::after { transform: translateX(-50%) translateY(0); }
-  /* Variante para tooltips perto da borda esquerda */
-  .ajuda.ajuda-dir::after { left: 0; transform: translateX(0) translateY(4px); }
-  .ajuda.ajuda-dir:hover::after { transform: translateX(0) translateY(0); }
-  .ajuda.ajuda-dir::before { left: 10px; }
-  /* Variante para tooltips perto da borda direita */
-  .ajuda.ajuda-esq::after { left: auto; right: 0; transform: translateX(0) translateY(4px); }
-  .ajuda.ajuda-esq:hover::after { transform: translateX(0) translateY(0); }
-  .ajuda.ajuda-esq::before { left: auto; right: 10px; }
-  /* Variante que abre para baixo (quando está no topo da tela) */
-  .ajuda.ajuda-baixo::after { bottom: auto; top: calc(100% + 8px); transform: translateX(-50%) translateY(-4px); }
-  .ajuda.ajuda-baixo:hover::after { transform: translateX(-50%) translateY(0); }
-  .ajuda.ajuda-baixo::before { bottom: auto; top: calc(100% + 2px); border-top-color: transparent; border-bottom-color: #1e293b; }
-  /* Dentro de cabeçalho de tabela */
+  /* Perto da borda esquerda: abre para a direita */
+  .ajuda.ajuda-dir::after { left: 0; margin-left: -8px; }
+  .ajuda.ajuda-dir::before { left: 14px; margin-left: 0; }
+  /* Perto da borda direita: abre para a esquerda */
+  .ajuda.ajuda-esq::after { left: auto; right: 0; margin-left: 0; margin-right: -8px; }
+  .ajuda.ajuda-esq::before { left: auto; right: 14px; margin-left: 0; }
+  /* Abre para baixo (quando o elemento esta no topo) */
+  .ajuda.ajuda-baixo::after { bottom: auto; top: calc(100% + 9px); }
+  .ajuda.ajuda-baixo::before { bottom: auto; top: calc(100% + 3px);
+    border-top-color: transparent; border-bottom-color: #1e293b; }
+  /* Dentro de cabecalho de tabela */
   th .ajuda { background: rgba(0,51,102,.15); color: var(--azul); }
   th .ajuda:hover { background: var(--azul); color: #fff; }
   /* Dentro de card do dashboard */
-  .dash-label .ajuda { width: 14px; height: 14px; font-size: 9px; }
+  .dash-label .ajuda { width: 14px; height: 14px; min-width: 14px; font-size: 9px; }
+  /* Dentro de titulo de secao do painel */
+  .painel-secao-titulo .ajuda, .card-title .ajuda { background: rgba(0,51,102,.13); color: var(--azul); }
+  .painel-secao-titulo .ajuda:hover, .card-title .ajuda:hover { background: var(--azul); color: #fff; }
 
   /* ══ PAGINAÇÃO + LOTE + VALIDAÇÃO (Fase 6) ══ */
   .pag-wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px 0; flex-wrap: wrap; }
@@ -351,7 +353,7 @@
 
   /* DASHBOARD */
   .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 18px; }
-  .dash-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); position: relative; overflow: hidden; }
+  .dash-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); position: relative; }
   .dash-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent, #003366); }
   .dash-card .dash-label { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
   .dash-card .dash-value { font-size: 26px; font-weight: 700; color: #1a1a2e; line-height: 1.1; }
@@ -415,44 +417,6 @@
   .sel-vazio { text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; }
 
   .linha-badge { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 6px; white-space: nowrap; border: 1px solid transparent; display: inline-block; }
-
-  /* ══ TOOLTIPS DE AJUDA ══ */
-  .ajuda { position: relative; display: inline-flex; align-items: center; justify-content: center;
-    width: 15px; height: 15px; border-radius: 50%; background: rgba(100,116,139,.18);
-    color: #64748b; font-size: 10px; font-weight: 700; cursor: help; margin-left: 5px;
-    vertical-align: middle; transition: all .12s; flex-shrink: 0; font-family: 'IBM Plex Sans', sans-serif; }
-  .ajuda:hover { background: var(--azul); color: #fff; transform: scale(1.12); }
-  .ajuda::after {
-    content: attr(data-ajuda);
-    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
-    background: #1e293b; color: #f1f5f9; font-size: 11.5px; font-weight: 400; line-height: 1.5;
-    padding: 9px 12px; border-radius: 8px; width: max-content; max-width: 260px;
-    text-align: left; white-space: normal; box-shadow: 0 8px 24px rgba(0,0,0,.28);
-    opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .15s, transform .15s;
-    z-index: 5000; }
-  .ajuda::before {
-    content: ''; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%);
-    border: 6px solid transparent; border-top-color: #1e293b;
-    opacity: 0; visibility: hidden; transition: opacity .15s; z-index: 5001; }
-  .ajuda:hover::after, .ajuda:hover::before { opacity: 1; visibility: visible; }
-  .ajuda:hover::after { transform: translateX(-50%) translateY(0); }
-  /* Variante para tooltips perto da borda esquerda */
-  .ajuda.ajuda-dir::after { left: 0; transform: translateX(0) translateY(4px); }
-  .ajuda.ajuda-dir:hover::after { transform: translateX(0) translateY(0); }
-  .ajuda.ajuda-dir::before { left: 10px; }
-  /* Variante para tooltips perto da borda direita */
-  .ajuda.ajuda-esq::after { left: auto; right: 0; transform: translateX(0) translateY(4px); }
-  .ajuda.ajuda-esq:hover::after { transform: translateX(0) translateY(0); }
-  .ajuda.ajuda-esq::before { left: auto; right: 10px; }
-  /* Variante que abre para baixo (quando está no topo da tela) */
-  .ajuda.ajuda-baixo::after { bottom: auto; top: calc(100% + 8px); transform: translateX(-50%) translateY(-4px); }
-  .ajuda.ajuda-baixo:hover::after { transform: translateX(-50%) translateY(0); }
-  .ajuda.ajuda-baixo::before { bottom: auto; top: calc(100% + 2px); border-top-color: transparent; border-bottom-color: #1e293b; }
-  /* Dentro de cabeçalho de tabela */
-  th .ajuda { background: rgba(0,51,102,.15); color: var(--azul); }
-  th .ajuda:hover { background: var(--azul); color: #fff; }
-  /* Dentro de card do dashboard */
-  .dash-label .ajuda { width: 14px; height: 14px; font-size: 9px; }
 
   /* ══ PAGINAÇÃO + LOTE + VALIDAÇÃO (Fase 6) ══ */
   .pag-wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px 0; flex-wrap: wrap; }
@@ -970,7 +934,7 @@ let arquivoFinalizados = null
 function renderProcessar() {
   document.getElementById('view-processar').innerHTML = `
   <div class="card">
-    <div class="card-title">📂 Upload das Planilhas</div>
+    <div class="card-title">📂 Upload das Planilhas<span class="ajuda ajuda-baixo ajuda-dir" data-ajuda="A planilha PRECISA ter: Codigo da Operacao, Etapa, Valor Solicitado, Na Etapa Desde e Linha de Credito. NAO pode ter Nome, CPF/CNPJ nem Email. O sistema valida ao subir.">?</span></div>
     <div class="upload-grid">
       <div>
         <label>Projetos em Andamento</label>
@@ -1413,6 +1377,7 @@ async function carregarPropostas() {
   try {
     const data = await sb('propostas?select=*&order=codigo.asc&limit=2000')
     todasPropostas = data || []
+    popularSelectEtapas()
     renderTabelaPropostas()
     renderStatsPropostas()
     atualizarBadgeFiltros()
@@ -1502,6 +1467,16 @@ function contarFiltrosAtivos() {
 }
 
 // Gera as opções de etapa a partir das propostas carregadas, ordenadas pelo funil
+// Preenche o select de etapas depois que as propostas foram carregadas.
+// Necessario porque o HTML do filtro e montado no INIT, antes dos dados chegarem.
+function popularSelectEtapas() {
+  const sel = document.getElementById('fa-etapa')
+  if (!sel) return
+  const atual = filtroEtapa
+  sel.innerHTML = '<option value="">Todas as etapas</option>' + opcoesEtapas()
+  sel.value = atual || ''
+}
+
 function opcoesEtapas() {
   const etapasSet = new Set()
   todasPropostas.forEach(p => { const e = (p.etapa||'').trim(); if (e) etapasSet.add(e) })
@@ -1652,7 +1627,7 @@ function renderTabelaPropostas() {
     {key:'linha_credito', label:'Linha'},
     {key:'etapa', label:'Etapa'},
     {key:'valor', label:'Valor', align:'right'},
-    {key:'na_etapa_desde', label:'Na Etapa Desde'},
+    {key:'na_etapa_desde', label:'Na Etapa Desde', ajuda:'Data em que a proposta entrou na etapa atual. O icone de alerta e os dias entre parenteses mostram ha quanto tempo esta parada.'},
     {key:'observacao', label:'Observação'},
   ]
 
@@ -1677,8 +1652,9 @@ function renderTabelaPropostas() {
     cols.map(c => {
       const isSorted = sortCol === c.key
       const icon = isSorted ? (sortDir===1?'↑':'↓') : '↕'
+      const tip = c.ajuda ? `<span class="ajuda ajuda-baixo ajuda-esq" data-ajuda="${c.ajuda}" onclick="event.stopPropagation()">?</span>` : ''
       return `<th class="${isSorted?'sorted':''}" onclick="setSort('${c.key}')" style="${c.align?'text-align:'+c.align:''}">
-        ${c.label} <span class="sort-icon">${icon}</span>
+        ${c.label}${tip} <span class="sort-icon">${icon}</span>
       </th>`
     }).join('')
 
@@ -2305,14 +2281,17 @@ function renderPainel() {
       <div class="dash-card accent-cinza"><div class="dash-label">Média de Dias Parados<span class="ajuda ajuda-baixo ajuda-esq" data-ajuda="Média de dias que as propostas ativas estão paradas na etapa. Quanto menor, mais ágil o andamento.">?</span></div><div class="dash-value">${d.mediaDias}<span style="font-size:14px;font-weight:600;color:#9ca3af"> dias</span></div><div class="dash-sub">média das ativas</div></div>
     </div>`
 
-  // ══ FUNIL — ordem oficial de avanço ══
-  const funilRows = FUNIL_ETAPAS
-    .map(etapa => ({ etapa, d: d.etapaMap[etapa] || null }))
-    .filter(x => x.d)
-  // Etapas que não estão no funil oficial (ex: Concedido, Recusado, Excluído, Análise Cadastral já está)
-  const outras = Object.entries(d.etapaMap)
-    .filter(([e]) => posicaoFunil(e) === -1)
-    .sort((a,b) => b[1].count - a[1].count)
+  // ══ FUNIL — ordem oficial de avanço (tudo junto, sem separar) ══
+  // Todas as etapas presentes nas propostas, ordenadas pelo funil oficial.
+  // As que não estão no funil (Concedido, Recusado, Excluído) vão para o fim.
+  const funilRows = Object.entries(d.etapaMap)
+    .map(([etapa, dd]) => ({ etapa, d: dd, pos: posicaoFunil(etapa) }))
+    .sort((a, b) => {
+      if (a.pos === -1 && b.pos === -1) return b.d.count - a.d.count
+      if (a.pos === -1) return 1
+      if (b.pos === -1) return -1
+      return a.pos - b.pos
+    })
 
   const maxFunil = Math.max(1, ...Object.values(d.etapaMap).map(x => x.count))
   const corEtapaFunil = (etapa) => {
@@ -2337,12 +2316,10 @@ function renderPainel() {
 
   const funil = `
     <div class="painel-secao">
-      <div class="painel-secao-titulo">🔻 Funil de Propostas por Etapa</div>
+      <div class="painel-secao-titulo">🔻 Funil de Propostas por Etapa<span class="ajuda ajuda-baixo ajuda-dir" data-ajuda="As etapas aparecem na ordem oficial de avanço da proposta, do cadastramento até a liberação. Mostra quantas propostas e o valor parado em cada fase.">?</span></div>
       <div class="painel-secao-sub">Etapas na ordem oficial de avanço, com quantidade, percentual e valor acumulado</div>
       <div class="funil-wrap">
         ${funilRows.map(x => funilBar(x.etapa, x.d)).join('')}
-        ${outras.length ? `<div class="funil-sep">Outras etapas / finalizadas</div>` : ''}
-        ${outras.map(([e, dd]) => funilBar(e, dd)).join('')}
       </div>
     </div>`
 
@@ -2369,7 +2346,7 @@ function renderPainel() {
   const cargaOrd = Object.entries(d.cargaMap).filter(([r]) => r !== 'N/A').sort((a,b) => b[1].ativas - a[1].ativas)
   const carga = `
     <div class="painel-secao">
-      <div class="painel-secao-titulo">👥 Carga de Trabalho por Responsável</div>
+      <div class="painel-secao-titulo">👥 Carga de Trabalho por Responsável<span class="ajuda ajuda-baixo ajuda-dir" data-ajuda="Ordenado pela quantidade de propostas ATIVAS de cada pessoa (não pelo total), para mostrar quem tem mais trabalho em andamento agora.">?</span></div>
       <div class="painel-secao-sub">Ordenado por propostas ativas (em tratativa)</div>
       <div class="carga-grid">
         ${cargaOrd.map(([nome, dd]) => {
@@ -2473,7 +2450,7 @@ function renderEvolucao() {
 
   return `
     <div class="painel-secao">
-      <div class="painel-secao-titulo">📈 Propostas Novas por Dia</div>
+      <div class="painel-secao-titulo">📈 Propostas Novas por Dia<span class="ajuda ajuda-baixo ajuda-dir" data-ajuda="Conta quantas propostas foram criadas em cada um dos 5 dias anteriores ao ultimo processamento, com base na data Na Etapa Desde.">?</span></div>
       <div class="painel-secao-sub">Propostas criadas nos 5 dias anteriores ao último processamento (${dataRef.toLocaleDateString('pt-BR')})</div>
       <div class="evo-resumo">
         <div class="evo-resumo-item"><span class="evo-resumo-num">${totalPeriodo}</span><span class="evo-resumo-lbl">no período (5 dias)</span></div>
