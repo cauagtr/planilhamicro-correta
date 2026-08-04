@@ -523,6 +523,23 @@
   /* Separador do funil */
   .funil-sep { font-size: 10.5px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .5px; margin: 10px 0 4px; padding-top: 8px; border-top: 1px dashed var(--border); }
 
+  /* Funil de vendas visual (trapézios centralizados que afunilam) */
+  .funilv-wrap { display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 8px 0; }
+  .funilv-fase { display: flex; align-items: center; gap: 14px; }
+  .funilv-info-esq { flex: 0 0 210px; text-align: right; font-size: 11.5px; font-weight: 600; color: #334155; line-height: 1.2; }
+  .funilv-barra-area { flex: 1; display: flex; justify-content: center; align-items: center; min-width: 0; }
+  .funilv-info-dir { flex: 0 0 52px; font-size: 11.5px; font-weight: 700; color: #94a3b8; }
+  .funilv-trapezio {
+    height: 34px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(180deg, var(--cor), var(--cor-prox));
+    color: #fff; font-weight: 700; font-size: 13px;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 11px) 100%, 11px 100%);
+    transition: width .5s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 2px 5px rgba(0,0,0,.12);
+  }
+  .funilv-valor { text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .funilv-valor-fora { font-size: 12px; font-weight: 700; margin-left: 7px; }
+
   /* Seção Etapas — duas colunas estilo FomentoNet */
   .etapas-colunas { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
   @media (max-width: 900px) { .etapas-colunas { grid-template-columns: 1fr; } }
@@ -2400,20 +2417,31 @@ function renderPainel() {
   })
   const maxFunil = Math.max(1, ...funilFases.map(f => f.valor))
 
+  // Gradiente de cores do funil (topo largo/quente -> base estreita/fria)
+  const funilCores = ['#DC2626','#EA580C','#D97706','#CA8A04','#65A30D','#16A34A','#059669','#0D9488','#0891B2','#0284C7','#2563EB','#4F46E5','#7C3AED']
   const funil = `
     <div class="painel-secao">
       <div class="painel-secao-titulo">🔻 Funil<span class="ajuda ajuda-baixo ajuda-dir" data-ajuda="Mostra quantas propostas ativas já passaram por cada fase ou estão à frente dela. A fase 1 tem todas as ativas; cada fase seguinte desconta as que pararam nas anteriores. Vai do maior (fase 1) ao menor (fase 13).">?</span></div>
       <div class="painel-secao-sub">Propostas ativas que já alcançaram cada fase (${ativasTotal} ativas no total)</div>
-      <div class="funil-wrap">
-        ${funilFases.map(f => {
-          const pct = maxFunil ? Math.round((f.valor/maxFunil)*100) : 0
+      <div class="funilv-wrap">
+        ${funilFases.map((f, i) => {
+          // Largura fielmente proporcional ao valor (valores iguais = largura igual;
+          // como a lógica é cumulativa decrescente, nunca fica mais largo que a fase de cima).
+          const prop = maxFunil ? (f.valor/maxFunil)*100 : 0
+          const larg = f.valor > 0 ? Math.max(prop, 6) : 4
           const pctTotal = ativasTotal ? ((f.valor/ativasTotal)*100).toFixed(1) : '0.0'
-          return `<div class="funil-row">
-            <div class="funil-label">${f.etapa}</div>
-            <div class="funil-bar-wrap">
-              <div class="funil-bar" style="width:${Math.max(pct,2)}%;background:#3b82f6">${f.valor}</div>
-              <div class="funil-pct">${pctTotal}%</div>
+          const cor = funilCores[i] || '#7C3AED'
+          const corProx = funilCores[i+1] || cor
+          const estreito = larg < 12
+          return `<div class="funilv-fase">
+            <div class="funilv-info-esq">${f.etapa}</div>
+            <div class="funilv-barra-area">
+              <div class="funilv-trapezio" style="width:${larg}%;--cor:${cor};--cor-prox:${corProx}">
+                ${estreito ? '' : `<span class="funilv-valor">${f.valor}</span>`}
+              </div>
+              ${estreito ? `<span class="funilv-valor-fora" style="color:${cor}">${f.valor}</span>` : ''}
             </div>
+            <div class="funilv-info-dir">${pctTotal}%</div>
           </div>`
         }).join('')}
       </div>
