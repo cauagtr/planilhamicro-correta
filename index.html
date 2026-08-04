@@ -1362,6 +1362,7 @@ async function processarPlanilhas() {
 // ============================================================
 let todasPropostas = []
 let filtroColab = 'TODOS'
+let mostrarFinalizadas = false  // por padrão, esconde as finalizadas do fluxo do dia a dia
 let filtroEtapa = ''
 let filtroLinhaCredito = ''
 let filtroSearch = ''
@@ -1398,6 +1399,9 @@ function renderPropostas() {
       <input type="text" class="search-input" placeholder="🔍 Buscar por código ou etapa..." oninput="setSearch(this.value)" value="${filtroSearch}"/>
       <button class="btn btn-secondary btn-sm btn-filtro-toggle" id="btn-fa-toggle" onclick="toggleFiltrosAvancados()">
         ⚙ Filtros <span id="fa-badge"></span>
+      </button>
+      <button class="btn btn-secondary btn-sm" id="btn-finalizadas" onclick="toggleFinalizadas()" title="Mostrar ou esconder propostas concedidas, recusadas e excluídas">
+        <span id="lbl-finalizadas">👁 Mostrar finalizadas</span>
       </button>
       <div class="export-group">
         <button class="btn btn-secondary btn-sm" onclick="exportarExcel()" title="Exportar para Excel">📊 Excel</button>
@@ -1507,7 +1511,17 @@ function getLinhasFiltradas() {
   } else {
     rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === filtroColab)
   }
-  return aplicarFiltrosData(rows)
+  rows = aplicarFiltrosData(rows)
+  // Esconde finalizadas (Concedido/Recusado/Excluído) do fluxo do dia a dia,
+  // exceto quando: o botão "Mostrar finalizadas" está ativo, o usuário
+  // filtrou explicitamente por uma etapa finalizada, OU há uma busca textual ativa
+  // (a busca deve encontrar qualquer proposta, inclusive finalizadas).
+  const filtrouEtapaFinalizada = filtroEtapa && ehFinalizada(filtroEtapa)
+  const temBusca = filtroSearch.trim().length > 0
+  if (!mostrarFinalizadas && !filtrouEtapaFinalizada && !temBusca) {
+    rows = rows.filter(p => ehAtiva(p.etapa))
+  }
+  return rows
 }
 
 // Retorna as linhas exatamente como exibidas na tabela (com busca e ordenação)
@@ -1532,6 +1546,27 @@ function getLinhasVisiveis() {
 function toggleFiltrosAvancados() {
   const el = document.getElementById('filtros-avancados')
   el.classList.toggle('aberto')
+}
+
+// ── Mostrar / esconder propostas finalizadas ──
+function toggleFinalizadas() {
+  mostrarFinalizadas = !mostrarFinalizadas
+  pagAtual = 1
+  const btn = document.getElementById('btn-finalizadas')
+  const lbl = document.getElementById('lbl-finalizadas')
+  if (mostrarFinalizadas) {
+    lbl.textContent = '🙈 Esconder finalizadas'
+    btn.style.background = '#003366'
+    btn.style.color = '#fff'
+    btn.style.borderColor = '#003366'
+  } else {
+    lbl.textContent = '👁 Mostrar finalizadas'
+    btn.style.background = ''
+    btn.style.color = ''
+    btn.style.borderColor = ''
+  }
+  renderTabelaPropostas()
+  renderStatsPropostas()
 }
 
 function contarFiltrosAtivos() {
