@@ -673,6 +673,47 @@ async function sb(path, opts={}) {
   return null
 }
 
+// Busca TODAS as linhas de uma consulta, contornando o teto de 1000 do Supabase.
+// O PostgREST limita cada resposta a 1000 registros mesmo com limit maior,
+// então paginamos com o header Range até acabar.
+async function sbAll(path, pageSize = 1000, maxPaginas = 50) {
+  const sep = path.includes('?') ? '&' : '?'
+  let todos = []
+  for (let p = 0; p < maxPaginas; p++) {
+    const de = p * pageSize
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}${sep}limit=${pageSize}&offset=${de}`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+      }
+    })
+    if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`)
+    const lote = await res.json()
+    todos = todos.concat(lote)
+    if (!lote.length || lote.length < pageSize) break
+  }
+  return todos
+}
+
+// Data de corte para propostas finalizadas: só as dos últimos N meses entram no sistema
+const MESES_HISTORICO = 6
+function dataCorteHistorico() {
+  const d = new Date()
+  d.setMonth(d.getMonth() - MESES_HISTORICO)
+  return d.toISOString().split('T')[0]
+}
+
+// Mantém todas as ativas + as finalizadas dos últimos 6 meses
+function filtrarPorJanela(props) {
+  const corte = dataCorteHistorico()
+  return props.filter(p => {
+    if (ehAtiva(p.etapa)) return true            // ativa: sempre entra
+    const d = p.na_etapa_desde ? String(p.na_etapa_desde).split('T')[0] : ''
+    return d && d >= corte                        // finalizada: só se for recente
+  })
+}
+
 // ============================================================
 // COLABORADORES
 // ============================================================
@@ -1262,7 +1303,7 @@ async function processarPlanilhas() {
     const merged = deduplicar([...and, ...fin])
 
     // Buscar atribuições manuais já salvas no banco para preservá-las
-    const propostasExistentes = await sb('propostas?select=codigo,etapa,responsavel,responsavel_final,observacao&limit=2000')
+    const propostasExistentes = await sbAll('propostas?select=codigo,etapa,responsavel,responsavel_final,observacao')
     const mapaAtribuicoes = {}
     if (propostasExistentes) {
       propostasExistentes.forEach(p => {
@@ -1458,8 +1499,9 @@ function renderPropostas() {
 
 async function carregarPropostas() {
   try {
-    const data = await sb('propostas?select=*&order=codigo.asc&limit=2000')
-    todasPropostas = data || []
+    const data = await sbAll('propostas?select=*&order=codigo.asc')
+    // Mantém todas as ativas + finalizadas dos últimos 6 meses
+    todasPropostas = filtrarPorJanela(data || [])
     popularSelectEtapas()
     renderTabelaPropostas()
     renderStatsPropostas()
@@ -1507,7 +1549,12 @@ function getLinhasFiltradas() {
       return resp === 'N/A' && ehAtiva(p.etapa)
     })
   } else if (filtroColab === 'TODOS') {
-    rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() !== 'N/A')
+    // Exige responsável apenas das ATIVAS. Finalizadas (concedido/recusado/excluído)
+    // são histórico e não precisam de responsável para aparecer.
+    rows = rows.filter(p => {
+      if (ehFinalizada(p.etapa)) return true
+      return (p.responsavel||'N/A').toUpperCase().trim() !== 'N/A'
+    })
   } else {
     rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === filtroColab)
   }
@@ -2337,10 +2384,11 @@ async function carregarPainel() {
   el.innerHTML = `<div class="card"><div class="empty"><div class="empty-icon">⏳</div><p>Carregando painel...</p></div></div>`
   try {
     const [props, hist] = await Promise.all([
-      sb('propostas?select=*&limit=2000'),
+      sbAll('propostas?select=*'),
       sb('historico_processamentos?select=*&order=criado_em.desc&limit=12')
     ])
-    dadosPainel.propostas = props || []
+    // Mesma janela da aba Propostas: ativas + finalizadas dos últimos 6 meses
+    dadosPainel.propostas = filtrarPorJanela(props || [])
     dadosPainel.historico = hist || []
     renderPainel()
   } catch(e) {
