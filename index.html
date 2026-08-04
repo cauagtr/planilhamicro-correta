@@ -701,12 +701,16 @@ function ehAtiva(etapa) { return !ehFinalizada(etapa) }
 
 // ── Linhas de crédito (coluna C da planilha) ──
 // Normaliza o texto da planilha para um rótulo padrão
-const LINHAS_CREDITO = ['Micro Mulher', 'Micro Fácil', 'Taxista']
+const LINHAS_CREDITO = ['Micro Mulher', 'Micro Fácil', 'Taxista', 'Recupera Micro', 'Micro Emergência', 'Taxista Mulher']
 function normalizarLinhaCredito(txt) {
   const t = (txt||'').toString().toUpperCase().trim()
   if (!t) return ''
-  if (t.includes('MULHER')) return 'Micro Mulher'
+  // Ordem importa: mais específicos primeiro
+  if (t.includes('TAXISTA MULHER') || t.includes('TÁXI MULHER')) return 'Taxista Mulher'
+  if (t.includes('RECUPERA')) return 'Recupera Micro'
+  if (t.includes('EMERGEN') || t.includes('EMERGÊN')) return 'Micro Emergência'
   if (t.includes('TAXI') || t.includes('TÁXI') || t.includes('TAXISTA')) return 'Taxista'
+  if (t.includes('MULHER')) return 'Micro Mulher'
   if (t.includes('FACIL') || t.includes('FÁCIL')) return 'Micro Fácil'
   return txt.toString().trim()  // mantém original se não reconhecer
 }
@@ -714,6 +718,9 @@ function corLinhaCredito(linha) {
   if (linha === 'Micro Mulher') return '#DB2777'
   if (linha === 'Micro Fácil') return '#2563EB'
   if (linha === 'Taxista') return '#CA8A04'
+  if (linha === 'Recupera Micro') return '#059669'
+  if (linha === 'Micro Emergência') return '#DC2626'
+  if (linha === 'Taxista Mulher') return '#9333EA'
   return '#94A3B8'
 }
 
