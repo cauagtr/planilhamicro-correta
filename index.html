@@ -523,6 +523,17 @@
   /* Separador do funil */
   .funil-sep { font-size: 10.5px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .5px; margin: 10px 0 4px; padding-top: 8px; border-top: 1px dashed var(--border); }
 
+  /* Seção Etapas — duas colunas estilo FomentoNet */
+  .etapas-colunas { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 900px) { .etapas-colunas { grid-template-columns: 1fr; } }
+  .etapas-col-titulo { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb; }
+  .etapa-linha { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+  .etapa-nome { font-size: 11.5px; color: #1e3a8a; font-weight: 500; flex: 0 0 auto; width: 200px; line-height: 1.3; }
+  .etapa-qtd { color: #64748b; font-weight: 400; }
+  .etapa-barra-track { flex: 1; height: 5px; background: #f1f5f9; border-radius: 3px; overflow: hidden; min-width: 30px; }
+  .etapa-barra-fill { height: 100%; border-radius: 3px; transition: width .5s ease; }
+  .etapa-pct { flex: 0 0 auto; min-width: 52px; text-align: center; font-size: 10.5px; font-weight: 700; color: #fff; padding: 2px 6px; border-radius: 4px; }
+
   /* Cards de linha de crédito */
   .linha-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
   .linha-card { border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
@@ -690,13 +701,40 @@ function corLinhaCredito(linha) {
 }
 
 // ── Funil: ordem oficial de avanço das etapas ──
+// ── Etapas oficiais do fluxo de microcrédito ──
+// Coluna esquerda: números inteiros (1 a 13) na ordem oficial de avanço
+const ETAPAS_INTEIRAS = [
+  '1 - Cadastramento',
+  '2 - Consulta Cadastral',
+  '3 - Preparação / Recepção de Documentos',
+  '4 - Análise Cadastral',
+  '5 - Aprovação Cadastral',
+  '6 - Análise de Garantias',
+  '7 - Análise Econômica-Financeira',
+  '8 - Aprovação do Crédito',
+  '9 - Aprovação do Gerente',
+  '10 - Aprovação do Diretor',
+  '11 - Emissão e Envio do Contrato',
+  '12 - Conferência do Contrato',
+  '13 - Liberação ao Financeiro',
+]
+// Coluna direita: extensões (subetapas de regularização/alteração)
+const ETAPAS_EXTENSOES = [
+  '1.1 - Alteração de Envolvidos',
+  '2.1 - Regularização de Restrições',
+  '4.1 - Regularização de Documentos',
+  '6.1 - Regularização de Garantias',
+  '7.1 - Regularização da Proposta',
+  '12.1 - Regularização do Contrato e/ou Conta Corrente',
+]
+// Lista completa na ordem de avanço (para ordenação geral)
 const FUNIL_ETAPAS = [
   '1 - Cadastramento',
   '1.1 - Alteração de Envolvidos',
   '2 - Consulta Cadastral',
   '2.1 - Regularização de Restrições',
-  'Análise Cadastral',
   '3 - Preparação / Recepção de Documentos',
+  '4 - Análise Cadastral',
   '4.1 - Regularização de Documentos',
   '5 - Aprovação Cadastral',
   '6 - Análise de Garantias',
@@ -711,11 +749,28 @@ const FUNIL_ETAPAS = [
   '12.1 - Regularização do Contrato e/ou Conta Corrente',
   '13 - Liberação ao Financeiro',
 ]
+
+// Normaliza nomes de etapa que podem vir de formas diferentes na planilha.
+// Ex: "Análise Cadastral" (sem número) -> "4 - Análise Cadastral"
+function normalizarNomeEtapa(etapa) {
+  const e = (etapa||'').trim()
+  if (!e) return e
+  // Match direto na lista oficial
+  const direto = FUNIL_ETAPAS.find(f => f.toLowerCase() === e.toLowerCase())
+  if (direto) return direto
+  // Match pelo texto após o número (ex: "Análise Cadastral" casa com "4 - Análise Cadastral")
+  const semNum = e.replace(/^\d+(\.\d+)?\s*-\s*/, '').toLowerCase().trim()
+  const porTexto = FUNIL_ETAPAS.find(f => f.replace(/^\d+(\.\d+)?\s*-\s*/, '').toLowerCase().trim() === semNum)
+  if (porTexto) return porTexto
+  return e
+}
+
 // Retorna a posição da etapa no funil (para ordenar); -1 se não achar
 function posicaoFunil(etapa) {
-  const e = (etapa||'').toLowerCase().trim()
-  return FUNIL_ETAPAS.findIndex(f => f.toLowerCase().trim() === e)
+  const norm = normalizarNomeEtapa(etapa)
+  return FUNIL_ETAPAS.findIndex(f => f.toLowerCase().trim() === norm.toLowerCase().trim())
 }
+
 
 function getCorColab(nome) {
   if (!nome || nome === 'N/A') return COLABORADORES['N/A']
@@ -2281,47 +2336,89 @@ function renderPainel() {
       <div class="dash-card accent-cinza"><div class="dash-label">Média de Dias Parados<span class="ajuda ajuda-baixo ajuda-esq" data-ajuda="Média de dias que as propostas ativas estão paradas na etapa. Quanto menor, mais ágil o andamento.">?</span></div><div class="dash-value">${d.mediaDias}<span style="font-size:14px;font-weight:600;color:#9ca3af"> dias</span></div><div class="dash-sub">média das ativas</div></div>
     </div>`
 
-  // ══ FUNIL — ordem oficial de avanço (tudo junto, sem separar) ══
-  // Todas as etapas presentes nas propostas, ordenadas pelo funil oficial.
-  // As que não estão no funil (Concedido, Recusado, Excluído) vão para o fim.
-  const funilRows = Object.entries(d.etapaMap)
-    .map(([etapa, dd]) => ({ etapa, d: dd, pos: posicaoFunil(etapa) }))
-    .sort((a, b) => {
-      if (a.pos === -1 && b.pos === -1) return b.d.count - a.d.count
-      if (a.pos === -1) return 1
-      if (b.pos === -1) return -1
-      return a.pos - b.pos
-    })
-
-  const maxFunil = Math.max(1, ...Object.values(d.etapaMap).map(x => x.count))
+  // ══ SEÇÃO "ETAPAS" — duas colunas (inteiras à esquerda, extensões à direita) ══
   const corEtapaFunil = (etapa) => {
-    const e = etapa.toLowerCase()
+    const e = (etapa||'').toLowerCase()
     if (e === 'concedido') return '#16a34a'
     if (e === 'excluído' || e === 'excluido') return '#dc2626'
     if (e === 'recusado') return '#d97706'
     return '#3b82f6'
   }
-  const funilBar = (etapa, dd) => {
-    const pct = Math.round((dd.count/maxFunil)*100)
-    const pctTotal = ((dd.count/totalP)*100).toFixed(1)
-    return `<div class="funil-row">
-      <div class="funil-label">${etapa}</div>
-      <div class="funil-bar-wrap">
-        <div class="funil-bar" style="width:${pct}%;background:${corEtapaFunil(etapa)}">${dd.count}</div>
-        <div class="funil-pct">${pctTotal}%</div>
+
+  // Monta uma linha de etapa no estilo FomentoNet (nome à esquerda, barra, % à direita)
+  const maxEtapaCol = Math.max(1, ...ETAPAS_INTEIRAS.concat(ETAPAS_EXTENSOES).map(et => (d.etapaMap[et]||{}).count || 0))
+  const etapaLinha = (etapa) => {
+    const dd = d.etapaMap[etapa] || { count: 0, valor: 0 }
+    const pctTotal = totalP ? ((dd.count/totalP)*100).toFixed(2) : '0.00'
+    const larguraBarra = maxEtapaCol ? Math.round((dd.count/maxEtapaCol)*100) : 0
+    const cor = dd.count > 0 ? corEtapaFunil(etapa) : '#e5e7eb'
+    // Cor do badge de %: laranja se for uma das maiores, verde caso contrário
+    const badgeCor = dd.count === 0 ? '#9ca3af' : (larguraBarra >= 60 ? '#ea580c' : (larguraBarra >= 25 ? '#eab308' : '#16a34a'))
+    return `<div class="etapa-linha">
+      <div class="etapa-nome">${etapa} <span class="etapa-qtd">(${dd.count})</span></div>
+      <div class="etapa-barra-track">
+        <div class="etapa-barra-fill" style="width:${Math.max(larguraBarra,1)}%;background:${cor}"></div>
       </div>
-      <div class="funil-valor">${formatValor(dd.valor)}</div>
+      <div class="etapa-pct" style="background:${badgeCor}">${pctTotal}%</div>
     </div>`
   }
 
-  const funil = `
+  const etapas = `
     <div class="painel-secao">
-      <div class="painel-secao-titulo">🔻 Funil de Propostas por Etapa<span class="ajuda ajuda-baixo ajuda-dir" data-ajuda="As etapas aparecem na ordem oficial de avanço da proposta, do cadastramento até a liberação. Mostra quantas propostas e o valor parado em cada fase.">?</span></div>
-      <div class="painel-secao-sub">Etapas na ordem oficial de avanço, com quantidade, percentual e valor acumulado</div>
-      <div class="funil-wrap">
-        ${funilRows.map(x => funilBar(x.etapa, x.d)).join('')}
+      <div class="painel-secao-titulo">📋 Etapas<span class="ajuda ajuda-baixo ajuda-dir" data-ajuda="Todas as etapas oficiais do fluxo. À esquerda as etapas principais (1 a 13), à direita as subetapas de regularização. Mostra quantas propostas há em cada uma e o percentual do total.">?</span></div>
+      <div class="painel-secao-sub">Listagem das propostas por etapa — quantidade e percentual sobre o total</div>
+      <div class="etapas-colunas">
+        <div class="etapas-col">
+          <div class="etapas-col-titulo">Etapas principais</div>
+          ${ETAPAS_INTEIRAS.map(etapaLinha).join('')}
+        </div>
+        <div class="etapas-col">
+          <div class="etapas-col-titulo">Subetapas / Regularizações</div>
+          ${ETAPAS_EXTENSOES.map(etapaLinha).join('')}
+        </div>
       </div>
     </div>`
+
+  // ══ SEÇÃO "FUNIL" — cumulativo decrescente, só etapas inteiras (1 a 13) ══
+  // Lógica: Fase N = (total de ativas) menos (todas as ativas que estão nas fases 1 até N-1).
+  // Ou seja, mostra quantas propostas já passaram por essa fase ou estão à frente dela.
+  const ativasTotal = d.ativas.length
+  // Conta ativas em cada etapa inteira
+  const ativasPorEtapa = {}
+  ETAPAS_INTEIRAS.forEach(et => { ativasPorEtapa[et] = 0 })
+  d.ativas.forEach(p => {
+    const norm = normalizarNomeEtapa(p.etapa)
+    if (ativasPorEtapa[norm] !== undefined) ativasPorEtapa[norm]++
+  })
+
+  let acumulado = 0
+  const funilFases = ETAPAS_INTEIRAS.map((etapa, i) => {
+    // Quem chegou nessa fase = total de ativas - as que ficaram nas fases anteriores
+    const restante = ativasTotal - acumulado
+    acumulado += ativasPorEtapa[etapa]  // soma quem parou nesta fase, para descontar na próxima
+    return { etapa, valor: restante, ordem: i+1 }
+  })
+  const maxFunil = Math.max(1, ...funilFases.map(f => f.valor))
+
+  const funil = `
+    <div class="painel-secao">
+      <div class="painel-secao-titulo">🔻 Funil<span class="ajuda ajuda-baixo ajuda-dir" data-ajuda="Mostra quantas propostas ativas já passaram por cada fase ou estão à frente dela. A fase 1 tem todas as ativas; cada fase seguinte desconta as que pararam nas anteriores. Vai do maior (fase 1) ao menor (fase 13).">?</span></div>
+      <div class="painel-secao-sub">Propostas ativas que já alcançaram cada fase (${ativasTotal} ativas no total)</div>
+      <div class="funil-wrap">
+        ${funilFases.map(f => {
+          const pct = maxFunil ? Math.round((f.valor/maxFunil)*100) : 0
+          const pctTotal = ativasTotal ? ((f.valor/ativasTotal)*100).toFixed(1) : '0.0'
+          return `<div class="funil-row">
+            <div class="funil-label">${f.etapa}</div>
+            <div class="funil-bar-wrap">
+              <div class="funil-bar" style="width:${Math.max(pct,2)}%;background:#3b82f6">${f.valor}</div>
+              <div class="funil-pct">${pctTotal}%</div>
+            </div>
+          </div>`
+        }).join('')}
+      </div>
+    </div>`
+
 
   // ══ DISTRIBUIÇÃO POR LINHA DE CRÉDITO ══
   const linhaEntries = Object.entries(d.linhaMap).sort((a,b) => b[1].count - a[1].count)
@@ -2409,6 +2506,7 @@ function renderPainel() {
       ${filtrosPainel}
       ${resumo}
     </div>
+    ${etapas}
     ${funil}
     ${distLinha}
     ${carga}
@@ -2501,7 +2599,9 @@ function calcularDadosPainel() {
   // Distribuição por etapa (com valor)
   const etapaMap = {}
   props.forEach(p => {
-    const e = (p.etapa||'—').trim() || '—'
+    const bruto = (p.etapa||'—').trim() || '—'
+    // Normaliza para o nome oficial (ex: "Análise Cadastral" -> "4 - Análise Cadastral")
+    const e = posicaoFunil(bruto) !== -1 ? normalizarNomeEtapa(bruto) : bruto
     if (!etapaMap[e]) etapaMap[e] = { count: 0, valor: 0 }
     etapaMap[e].count++
     etapaMap[e].valor += valorNum(p)
