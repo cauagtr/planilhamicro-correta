@@ -520,6 +520,12 @@
   .painel-filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
   .painel-filtros .fa-input { max-width: 240px; }
 
+  .painel-filtros-data { border-bottom: none; padding-bottom: 0; margin-top: -6px; }
+  .pf-data { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .pf-data-lbl { font-size: 11.5px; font-weight: 700; color: #475569; }
+  .pf-data .fa-input { max-width: 150px; }
+  .pf-ate { font-size: 11px; color: #94a3b8; }
+
   /* Separador do funil */
   .funil-sep { font-size: 10.5px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .5px; margin: 10px 0 4px; padding-top: 8px; border-top: 1px dashed var(--border); }
 
@@ -696,23 +702,7 @@ async function sbAll(path, pageSize = 1000, maxPaginas = 50) {
   return todos
 }
 
-// Data de corte para propostas finalizadas: só as dos últimos N meses entram no sistema
-const MESES_HISTORICO = 6
-function dataCorteHistorico() {
-  const d = new Date()
-  d.setMonth(d.getMonth() - MESES_HISTORICO)
-  return d.toISOString().split('T')[0]
-}
 
-// Mantém todas as ativas + as finalizadas dos últimos 6 meses
-function filtrarPorJanela(props) {
-  const corte = dataCorteHistorico()
-  return props.filter(p => {
-    if (ehAtiva(p.etapa)) return true            // ativa: sempre entra
-    const d = p.na_etapa_desde ? String(p.na_etapa_desde).split('T')[0] : ''
-    return d && d >= corte                        // finalizada: só se for recente
-  })
-}
 
 // ============================================================
 // COLABORADORES
@@ -742,11 +732,15 @@ function ehAtiva(etapa) { return !ehFinalizada(etapa) }
 
 // ── Linhas de crédito (coluna C da planilha) ──
 // Normaliza o texto da planilha para um rótulo padrão
-const LINHAS_CREDITO = ['Micro Mulher', 'Micro Fácil', 'Taxista', 'Recupera Micro', 'Micro Emergência', 'Taxista Mulher']
+const LINHAS_CREDITO = ['Micro Mulher', 'Micro Fácil', 'Taxista', 'Taxista Mulher',
+                       'Micro Rural', 'Micro Rural Mulher', 'Recupera Micro', 'Micro Emergência']
 function normalizarLinhaCredito(txt) {
   const t = (txt||'').toString().toUpperCase().trim()
   if (!t) return ''
-  // Ordem importa: mais específicos primeiro
+  // A ORDEM IMPORTA: os nomes compostos precisam ser testados primeiro,
+  // senão "MICRO RURAL MULHER" cairia na regra genérica de MULHER.
+  if (t.includes('RURAL') && t.includes('MULHER')) return 'Micro Rural Mulher'
+  if (t.includes('RURAL')) return 'Micro Rural'
   if (t.includes('TAXISTA MULHER') || t.includes('TÁXI MULHER')) return 'Taxista Mulher'
   if (t.includes('RECUPERA')) return 'Recupera Micro'
   if (t.includes('EMERGEN') || t.includes('EMERGÊN')) return 'Micro Emergência'
@@ -759,9 +753,11 @@ function corLinhaCredito(linha) {
   if (linha === 'Micro Mulher') return '#DB2777'
   if (linha === 'Micro Fácil') return '#2563EB'
   if (linha === 'Taxista') return '#CA8A04'
+  if (linha === 'Taxista Mulher') return '#9333EA'
+  if (linha === 'Micro Rural') return '#65A30D'
+  if (linha === 'Micro Rural Mulher') return '#BE185D'
   if (linha === 'Recupera Micro') return '#059669'
   if (linha === 'Micro Emergência') return '#DC2626'
-  if (linha === 'Taxista Mulher') return '#9333EA'
   return '#94A3B8'
 }
 
@@ -1230,6 +1226,7 @@ function transformar(rows) {
     etapa: getCol(row,'Etapa'),
     valor: getCol(row,'Valor Solicitado','Valor'),
     naEtapaDe: parseData(getCol(row,'Na Etapa Desde','Na Etapa De')),
+    dataCadastro: parseData(getCol(row,'Data de Cadastro','Data Cadastro','Data de cadastro')),
     linhaCredito: normalizarLinhaCredito(getCol(row,'Linha de Crédito','Linha de Credito','Linha do Crédito','Linha')),
   }))
 }
@@ -1327,6 +1324,10 @@ async function processarPlanilhas() {
       linha_credito: r.linhaCredito || '',
       na_etapa_desde: (() => {
         try { return r.naEtapaDe && !isNaN(r.naEtapaDe.getTime()) ? r.naEtapaDe.toISOString().split('T')[0] : null }
+        catch(e) { return null }
+      })(),
+      data_cadastro: (() => {
+        try { return r.dataCadastro && !isNaN(r.dataCadastro.getTime()) ? r.dataCadastro.toISOString().split('T')[0] : null }
         catch(e) { return null }
       })(),
       observacoes_anteriores: r.observacoesAnteriores || '',
@@ -1497,11 +1498,16 @@ function renderPropostas() {
   </div>`
 }
 
+// Controla se o histórico de finalizadas já foi trazido do banco
+let finalizadasCarregadas = false
+
 async function carregarPropostas() {
   try {
-    const data = await sbAll('propostas?select=*&order=codigo.asc')
-    // Mantém todas as ativas + finalizadas dos últimos 6 meses
-    todasPropostas = filtrarPorJanela(data || [])
+    // No dia a dia carrega apenas as propostas ATIVAS — é o que interessa
+    // e mantém a tela rápida mesmo com dezenas de milhares no histórico.
+    const data = await sbAll('propostas?select=*&finalizada=eq.false&order=codigo.asc')
+    todasPropostas = data || []
+    finalizadasCarregadas = false
     popularSelectEtapas()
     renderTabelaPropostas()
     renderStatsPropostas()
@@ -1596,11 +1602,30 @@ function toggleFiltrosAvancados() {
 }
 
 // ── Mostrar / esconder propostas finalizadas ──
-function toggleFinalizadas() {
+async function toggleFinalizadas() {
   mostrarFinalizadas = !mostrarFinalizadas
   pagAtual = 1
   const btn = document.getElementById('btn-finalizadas')
   const lbl = document.getElementById('lbl-finalizadas')
+
+  // Primeira vez que liga: busca o histórico no banco
+  if (mostrarFinalizadas && !finalizadasCarregadas) {
+    lbl.textContent = '⏳ Carregando histórico...'
+    btn.disabled = true
+    try {
+      const fin = await sbAll('propostas?select=*&finalizada=eq.true&order=codigo.asc')
+      const jaTem = new Set(todasPropostas.map(p => String(p.codigo)))
+      todasPropostas = todasPropostas.concat((fin||[]).filter(p => !jaTem.has(String(p.codigo))))
+      finalizadasCarregadas = true
+      popularSelectEtapas()
+      showToast(`✓ ${(fin||[]).length} propostas finalizadas carregadas`)
+    } catch(e) {
+      showToast('Erro ao carregar histórico: ' + e.message, 'error')
+      mostrarFinalizadas = false
+    }
+    btn.disabled = false
+  }
+
   if (mostrarFinalizadas) {
     lbl.textContent = '🙈 Esconder finalizadas'
     btn.style.background = '#003366'
@@ -1770,7 +1795,34 @@ function setFiltroColab(c) {
   atualizarBadgeFiltros()
 }
 
-function setSearch(v) { filtroSearch = v; pagAtual = 1; renderTabelaPropostas(); atualizarBadgeFiltros() }
+let buscaTimer = null
+function setSearch(v) {
+  filtroSearch = v
+  pagAtual = 1
+  renderTabelaPropostas()
+  atualizarBadgeFiltros()
+  // Se digitou um código e ele não está na memória, procura no banco.
+  // Assim a busca alcança o histórico inteiro sem precisar carregá-lo.
+  clearTimeout(buscaTimer)
+  buscaTimer = setTimeout(() => buscarNoBanco(v), 450)
+}
+
+async function buscarNoBanco(termo) {
+  const q = (termo||'').trim()
+  if (q.length < 4 || finalizadasCarregadas) return          // curto demais ou já temos tudo
+  if (todasPropostas.some(p => String(p.codigo).includes(q))) return  // já achou localmente
+  try {
+    const achadas = await sbAll(`propostas?select=*&codigo=like.*${encodeURIComponent(q)}*`)
+    if (!achadas || !achadas.length) return
+    const jaTem = new Set(todasPropostas.map(p => String(p.codigo)))
+    const novas = achadas.filter(p => !jaTem.has(String(p.codigo)))
+    if (!novas.length) return
+    todasPropostas = todasPropostas.concat(novas)
+    renderTabelaPropostas()
+    renderStatsPropostas()
+    showToast(`✓ ${novas.length} proposta${novas.length>1?'s':''} encontrada${novas.length>1?'s':''} no histórico`)
+  } catch(e) { /* silencioso: a busca local continua valendo */ }
+}
 
 function setSort(col) {
   if (sortCol === col) sortDir *= -1
@@ -2379,21 +2431,31 @@ function exportarPDF() {
 // ============================================================
 let dadosPainel = { propostas: [], historico: [] }
 
+// O painel começa mostrando só as propostas ativas. O histórico completo
+// (que pode ter dezenas de milhares) entra sob demanda, por um botão.
+let painelIncluiHistorico = false
+
 async function carregarPainel() {
   const el = document.getElementById('view-painel')
-  el.innerHTML = `<div class="card"><div class="empty"><div class="empty-icon">⏳</div><p>Carregando painel...</p></div></div>`
+  const oque = painelIncluiHistorico ? 'base completa' : 'propostas ativas'
+  el.innerHTML = `<div class="card"><div class="empty"><div class="empty-icon">⏳</div><p>Carregando ${oque}...</p></div></div>`
   try {
+    const filtro = painelIncluiHistorico ? '' : '&finalizada=eq.false'
     const [props, hist] = await Promise.all([
-      sbAll('propostas?select=*'),
+      sbAll(`propostas?select=*${filtro}`),
       sb('historico_processamentos?select=*&order=criado_em.desc&limit=12')
     ])
-    // Mesma janela da aba Propostas: ativas + finalizadas dos últimos 6 meses
-    dadosPainel.propostas = filtrarPorJanela(props || [])
+    dadosPainel.propostas = props || []
     dadosPainel.historico = hist || []
     renderPainel()
   } catch(e) {
     el.innerHTML = `<div class="card"><div class="alert alert-danger">❌ Erro ao carregar painel: ${e.message}</div></div>`
   }
+}
+
+async function alternarHistoricoPainel() {
+  painelIncluiHistorico = !painelIncluiHistorico
+  await carregarPainel()
 }
 
 function renderPainel() {
@@ -2427,7 +2489,21 @@ function renderPainel() {
         <option value="">🏷️ Todas as linhas</option>
         ${LINHAS_CREDITO.map(l => `<option value="${l}" ${painelFiltroLinha===l?'selected':''}>${l}</option>`).join('')}
       </select>
-      ${(painelFiltroColab||painelFiltroEtapa||painelFiltroLinha) ? `<button class="btn btn-secondary btn-sm" onclick="painelFiltroColab='';painelFiltroEtapa='';painelFiltroLinha='';renderPainel()">✕ Limpar</button>` : ''}
+      ${temFiltroPainel() ? `<button class="btn btn-secondary btn-sm" onclick="limparFiltrosPainel()">✕ Limpar</button>` : ''}
+    </div>
+    <div class="painel-filtros painel-filtros-data">
+      <div class="pf-data">
+        <span class="pf-data-lbl">📅 Data de Cadastro</span>
+        <input type="date" class="fa-input" value="${painelCadIni}" onchange="painelCadIni=this.value; renderPainel()"/>
+        <span class="pf-ate">até</span>
+        <input type="date" class="fa-input" value="${painelCadFim}" onchange="painelCadFim=this.value; renderPainel()"/>
+      </div>
+      <div class="pf-data">
+        <span class="pf-data-lbl">⏱️ Na Etapa Desde</span>
+        <input type="date" class="fa-input" value="${painelEtapaIni}" onchange="painelEtapaIni=this.value; renderPainel()"/>
+        <span class="pf-ate">até</span>
+        <input type="date" class="fa-input" value="${painelEtapaFim}" onchange="painelEtapaFim=this.value; renderPainel()"/>
+      </div>
     </div>`
 
   // ══ CARDS DE RESUMO ══
@@ -2618,6 +2694,7 @@ function renderPainel() {
         <div style="display:flex;gap:6px;align-items:center">
           <button class="btn btn-secondary btn-sm" onclick="exportarPainelExcel()" title="Exportar indicadores para Excel">📊 Excel</button>
           <button class="btn btn-secondary btn-sm" onclick="exportarPainelPDF()" title="Exportar relatório gerencial em PDF">📄 Relatório PDF</button>
+          <button class="btn btn-secondary btn-sm" onclick="alternarHistoricoPainel()" title="Alterna entre ver só as propostas ativas ou toda a base histórica">${painelIncluiHistorico ? '📂 Base completa' : '📁 Só ativas'}</button>
           <button class="btn btn-secondary btn-sm" onclick="carregarPainel()">↺ Atualizar</button>
         </div>
       </div>
@@ -2690,13 +2767,36 @@ function renderEvolucao() {
 let painelFiltroColab = ''
 let painelFiltroEtapa = ''
 let painelFiltroLinha = ''
+// Filtros de data do painel (aceitam início e fim, ambos opcionais)
+let painelCadIni = '', painelCadFim = ''      // Data de Cadastro
+let painelEtapaIni = '', painelEtapaFim = ''  // Na Etapa Desde
 
 function propostasPainelFiltradas() {
   let props = [...dadosPainel.propostas]
   if (painelFiltroColab) props = props.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === painelFiltroColab)
   if (painelFiltroEtapa) props = props.filter(p => (p.etapa||'').trim() === painelFiltroEtapa)
   if (painelFiltroLinha) props = props.filter(p => normalizarLinhaCredito(p.linha_credito) === painelFiltroLinha)
+
+  // Filtros por período. Propostas sem a data preenchida ficam de fora
+  // quando o filtro correspondente está ativo.
+  const soData = v => v ? String(v).split('T')[0] : ''
+  if (painelCadIni)   props = props.filter(p => soData(p.data_cadastro)  && soData(p.data_cadastro)  >= painelCadIni)
+  if (painelCadFim)   props = props.filter(p => soData(p.data_cadastro)  && soData(p.data_cadastro)  <= painelCadFim)
+  if (painelEtapaIni) props = props.filter(p => soData(p.na_etapa_desde) && soData(p.na_etapa_desde) >= painelEtapaIni)
+  if (painelEtapaFim) props = props.filter(p => soData(p.na_etapa_desde) && soData(p.na_etapa_desde) <= painelEtapaFim)
+
   return props
+}
+
+function temFiltroPainel() {
+  return !!(painelFiltroColab || painelFiltroEtapa || painelFiltroLinha ||
+            painelCadIni || painelCadFim || painelEtapaIni || painelEtapaFim)
+}
+
+function limparFiltrosPainel() {
+  painelFiltroColab = ''; painelFiltroEtapa = ''; painelFiltroLinha = ''
+  painelCadIni = ''; painelCadFim = ''; painelEtapaIni = ''; painelEtapaFim = ''
+  renderPainel()
 }
 
 function calcularDadosPainel() {
