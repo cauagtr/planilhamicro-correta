@@ -526,6 +526,9 @@
   .pf-data .fa-input { max-width: 150px; }
   .pf-ate { font-size: 11px; color: #94a3b8; }
 
+  .bloco-import { display: none; }
+  .bloco-import.aberto { display: block; }
+
   /* Separador do funil */
   .funil-sep { font-size: 10.5px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .5px; margin: 10px 0 4px; padding-top: 8px; border-top: 1px dashed var(--border); }
 
@@ -1098,7 +1101,186 @@ function renderProcessar() {
   <div class="card" id="card-resultado" style="display:none;margin-top:16px">
     <div class="card-title">✅ Resultado do Processamento</div>
     <div id="resultado-content"></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-title" style="cursor:pointer" onclick="document.getElementById('bloco-import').classList.toggle('aberto')">
+      📚 Importação de Base Histórica
+      <span class="ajuda ajuda-baixo ajuda-dir" data-ajuda="Use para carregar de uma vez as propostas antigas do FomentoNet, ano a ano. Nao interfere no processamento do dia a dia e nunca apaga responsavel ja atribuido." onclick="event.stopPropagation()">?</span>
+      <span style="margin-left:auto;font-size:11px;color:#6b7280;font-weight:400">clique para abrir</span>
+    </div>
+    <div class="bloco-import" id="bloco-import">
+      <div class="alert alert-info" style="margin-bottom:14px">
+        Envie o arquivo de um ano por vez, com Concedido, Recusado e Excluído juntos.
+        As propostas entram sem responsável — e quem já tiver responsável no sistema <b>mantém o dele</b>.
+      </div>
+      <div class="input-file-area" id="drop-hist" onclick="document.getElementById('file-hist').click()"
+        ondragover="event.preventDefault();this.classList.add('over')"
+        ondragleave="this.classList.remove('over')"
+        ondrop="handleDropHist(event)">
+        <input type="file" id="file-hist" accept=".xlsx,.xls,.csv" onchange="handleFileHist(event)"/>
+        <div class="file-icon">📚</div>
+        <div class="file-label-main">Clique ou arraste o arquivo do ano</div>
+        <div class="file-label-sub">.xlsx, .xls ou .csv</div>
+        <div class="file-name" id="nome-hist"></div>
+      </div>
+      <div id="preview-hist"></div>
+      <div id="status-hist" class="alert alert-info" style="margin-top:12px">Nenhum arquivo selecionado.</div>
+      <div class="progress-wrap" id="prog-hist-wrap" style="display:none">
+        <div class="progress-label" id="prog-hist-label"></div>
+        <div class="progress-bar"><div class="progress-fill" id="prog-hist-fill"></div></div>
+      </div>
+      <button class="btn btn-primary" id="btn-import-hist" disabled onclick="importarHistorico()" style="margin-top:12px">
+        📥 Importar para o sistema
+      </button>
+      <div id="resultado-hist" style="margin-top:14px"></div>
+    </div>
   </div>`
+}
+
+
+// ══════════════════════════════════════════════════════════
+// IMPORTAÇÃO DE BASE HISTÓRICA
+// Carrega arquivos antigos do FomentoNet (um ano por vez).
+// Independente do processamento diário: não mexe na referência
+// nem sobrescreve responsável já atribuído.
+// ══════════════════════════════════════════════════════════
+let arquivoHist = null
+let linhasHist = []
+
+function handleDropHist(e) {
+  e.preventDefault()
+  e.currentTarget.classList.remove('over')
+  const f = e.dataTransfer.files[0]
+  if (f) processarArquivoHist(f)
+}
+function handleFileHist(e) {
+  const f = e.target.files[0]
+  if (f) processarArquivoHist(f)
+}
+
+async function processarArquivoHist(file) {
+  arquivoHist = file
+  linhasHist = []
+  document.getElementById('nome-hist').textContent = '✓ ' + file.name
+  const prev = document.getElementById('preview-hist')
+  const status = document.getElementById('status-hist')
+  const btn = document.getElementById('btn-import-hist')
+  btn.disabled = true
+  prev.innerHTML = '<div class="preview-box">⏳ Lendo arquivo...</div>'
+
+  try {
+    const rows = await lerPlanilha(file)
+    if (!rows.length) throw new Error('Arquivo vazio')
+
+    const cabecalhos = Object.keys(rows[0] || {})
+    const faltando = COLUNAS_NECESSARIAS.filter(cl => !achouColuna(cabecalhos, cl.nomes)).map(cl => cl.label)
+    const proibidas = COLUNAS_PROIBIDAS.filter(cl => achouColuna(cabecalhos, cl.nomes)).map(cl => cl.label)
+
+    if (faltando.length) {
+      prev.innerHTML = `<div class="preview-box erro" id="preview-hist-box">❌ Faltam colunas: <b>${faltando.join(', ')}</b></div>`
+      status.className = 'alert alert-danger'
+      status.textContent = 'Corrija o arquivo e envie novamente.'
+      return
+    }
+
+    linhasHist = transformar(rows)
+    const comCodigo = linhasHist.filter(r => r.codigo && String(r.codigo).trim())
+    linhasHist = comCodigo
+
+    // Resumo do que veio no arquivo
+    const porEtapa = {}
+    linhasHist.forEach(r => { const e = (r.etapa||'—').trim(); porEtapa[e] = (porEtapa[e]||0)+1 })
+    const topo = Object.entries(porEtapa).sort((a,b)=>b[1]-a[1]).slice(0,6)
+
+    prev.innerHTML = `<div class="preview-box" id="preview-hist-box">
+      <div class="preview-linha"><span class="ok">✅</span> <b>${linhasHist.length}</b> propostas · <b>${cabecalhos.length}</b> colunas</div>
+      <div class="preview-linha">${proibidas.length ? '<span class="warn">🔓</span> Contém dados pessoais: <b>' + proibidas.join(', ') + '</b> — serão descartados na leitura' : '<span class="ok">🔒</span> Sem dados pessoais'}</div>
+      <div class="preview-cols">Etapas: ${topo.map(([e,n]) => `<b>${e}</b> (${n})`).join(' · ')}</div>
+    </div>`
+
+    status.className = 'alert alert-success'
+    status.innerHTML = `✅ Pronto para importar <b>${linhasHist.length}</b> propostas.`
+    btn.disabled = false
+  } catch(err) {
+    prev.innerHTML = `<div class="preview-box erro" id="preview-hist-box">❌ Erro ao ler: ${err.message}</div>`
+    status.className = 'alert alert-danger'
+    status.textContent = 'Não foi possível ler o arquivo.'
+  }
+}
+
+function setProgHist(pct, txt) {
+  document.getElementById('prog-hist-wrap').style.display = 'block'
+  document.getElementById('prog-hist-fill').style.width = pct + '%'
+  document.getElementById('prog-hist-label').textContent = txt
+}
+
+async function importarHistorico() {
+  if (!linhasHist.length) return
+  const btn = document.getElementById('btn-import-hist')
+  const status = document.getElementById('status-hist')
+  btn.disabled = true
+  document.getElementById('resultado-hist').innerHTML = ''
+
+  try {
+    // 1) Descobre quem já existe, para preservar o responsável
+    setProgHist(8, 'Verificando o que já existe no sistema...')
+    const existentes = await sbAll('propostas?select=codigo,responsavel,responsavel_final,observacao')
+    const mapa = {}
+    ;(existentes||[]).forEach(p => { mapa[String(p.codigo).trim()] = p })
+
+    // 2) Monta os registros
+    setProgHist(20, 'Preparando os dados...')
+    const iso = d => { try { return d && !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : null } catch(e) { return null } }
+    let novas = 0, atualizadas = 0
+    const registros = linhasHist.map(r => {
+      const chave = String(r.codigo).trim()
+      const ja = mapa[chave]
+      if (ja) atualizadas++; else novas++
+      return {
+        codigo: chave,
+        etapa: r.etapa,
+        valor: parseValor(r.valor),
+        linha_credito: r.linhaCredito || '',
+        na_etapa_desde: iso(r.naEtapaDe),
+        data_cadastro: iso(r.dataCadastro),
+        // Preserva o que já existe; proposta nova entra sem responsável
+        responsavel: ja ? ja.responsavel : 'N/A',
+        responsavel_final: ja ? ja.responsavel_final : 'N/A',
+        observacao: ja ? (ja.observacao || '') : '',
+        observacoes_anteriores: '',
+      }
+    })
+
+    // 3) Grava em lotes (muito mais rápido que uma a uma)
+    const LOTE = 500
+    for (let i = 0; i < registros.length; i += LOTE) {
+      const lote = registros.slice(i, i + LOTE)
+      await sb('propostas?on_conflict=codigo', {
+        method: 'POST',
+        prefer: 'resolution=merge-duplicates,return=minimal',
+        body: lote
+      })
+      const pct = 20 + Math.round(((i + lote.length) / registros.length) * 75)
+      setProgHist(pct, `Importando... ${Math.min(i + LOTE, registros.length)} de ${registros.length}`)
+    }
+
+    setProgHist(100, 'Concluído!')
+    status.className = 'alert alert-success'
+    status.innerHTML = `✅ Importação concluída.`
+    document.getElementById('resultado-hist').innerHTML = `
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Lidas do arquivo</div><div class="stat-value">${registros.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Novas no sistema</div><div class="stat-value" style="color:#166534">${novas}</div></div>
+        <div class="stat-card"><div class="stat-label">Já existiam</div><div class="stat-value" style="color:#92400e">${atualizadas}</div><div class="stat-sub">atualizadas, responsável mantido</div></div>
+      </div>`
+    showToast(`✓ ${registros.length} propostas importadas`)
+  } catch(e) {
+    status.className = 'alert alert-danger'
+    status.textContent = '❌ Erro na importação: ' + e.message
+    showToast('Erro: ' + e.message, 'error')
+  }
+  btn.disabled = false
 }
 
 function handleDrop(e, tipo) {
