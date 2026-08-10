@@ -685,7 +685,7 @@ async function sb(path, opts={}) {
 // Busca TODAS as linhas de uma consulta, contornando o teto de 1000 do Supabase.
 // O PostgREST limita cada resposta a 1000 registros mesmo com limit maior,
 // então paginamos com o header Range até acabar.
-async function sbAll(path, pageSize = 1000, maxPaginas = 50) {
+async function sbAll(path, pageSize = 1000, maxPaginas = 200) {
   const sep = path.includes('?') ? '&' : '?'
   let todos = []
   for (let p = 0; p < maxPaginas; p++) {
@@ -1111,17 +1111,17 @@ function renderProcessar() {
     </div>
     <div class="bloco-import" id="bloco-import">
       <div class="alert alert-info" style="margin-bottom:14px">
-        Envie o arquivo de um ano por vez, com Concedido, Recusado e Excluído juntos.
+        Selecione todos os arquivos de uma vez (um por ano, ou um único com tudo).
         As propostas entram sem responsável — e quem já tiver responsável no sistema <b>mantém o dele</b>.
       </div>
       <div class="input-file-area" id="drop-hist" onclick="document.getElementById('file-hist').click()"
         ondragover="event.preventDefault();this.classList.add('over')"
         ondragleave="this.classList.remove('over')"
         ondrop="handleDropHist(event)">
-        <input type="file" id="file-hist" accept=".xlsx,.xls,.csv" onchange="handleFileHist(event)"/>
+        <input type="file" id="file-hist" accept=".xlsx,.xls,.csv" multiple onchange="handleFileHist(event)"/>
         <div class="file-icon">📚</div>
-        <div class="file-label-main">Clique ou arraste o arquivo do ano</div>
-        <div class="file-label-sub">.xlsx, .xls ou .csv</div>
+        <div class="file-label-main">Clique ou arraste os arquivos</div>
+        <div class="file-label-sub">pode selecionar vários de uma vez · .xlsx, .xls ou .csv</div>
         <div class="file-name" id="nome-hist"></div>
       </div>
       <div id="preview-hist"></div>
@@ -1145,68 +1145,82 @@ function renderProcessar() {
 // Independente do processamento diário: não mexe na referência
 // nem sobrescreve responsável já atribuído.
 // ══════════════════════════════════════════════════════════
-let arquivoHist = null
+let arquivosHist = []
 let linhasHist = []
 
 function handleDropHist(e) {
   e.preventDefault()
   e.currentTarget.classList.remove('over')
-  const f = e.dataTransfer.files[0]
-  if (f) processarArquivoHist(f)
+  const fs = [...(e.dataTransfer.files||[])]
+  if (fs.length) processarArquivosHist(fs)
 }
 function handleFileHist(e) {
-  const f = e.target.files[0]
-  if (f) processarArquivoHist(f)
+  const fs = [...(e.target.files||[])]
+  if (fs.length) processarArquivosHist(fs)
 }
 
-async function processarArquivoHist(file) {
-  arquivoHist = file
+// Lê vários arquivos de uma vez e junta tudo numa base só
+async function processarArquivosHist(files) {
+  arquivosHist = files
   linhasHist = []
-  document.getElementById('nome-hist').textContent = '✓ ' + file.name
   const prev = document.getElementById('preview-hist')
   const status = document.getElementById('status-hist')
   const btn = document.getElementById('btn-import-hist')
   btn.disabled = true
-  prev.innerHTML = '<div class="preview-box">⏳ Lendo arquivo...</div>'
+  document.getElementById('nome-hist').textContent =
+    files.length === 1 ? '✓ ' + files[0].name : `✓ ${files.length} arquivos selecionados`
 
-  try {
-    const rows = await lerPlanilha(file)
-    if (!rows.length) throw new Error('Arquivo vazio')
+  const porArquivo = []
+  const erros = []
+  let temPessoais = new Set()
 
-    const cabecalhos = Object.keys(rows[0] || {})
-    const faltando = COLUNAS_NECESSARIAS.filter(cl => !achouColuna(cabecalhos, cl.nomes)).map(cl => cl.label)
-    const proibidas = COLUNAS_PROIBIDAS.filter(cl => achouColuna(cabecalhos, cl.nomes)).map(cl => cl.label)
-
-    if (faltando.length) {
-      prev.innerHTML = `<div class="preview-box erro" id="preview-hist-box">❌ Faltam colunas: <b>${faltando.join(', ')}</b></div>`
-      status.className = 'alert alert-danger'
-      status.textContent = 'Corrija o arquivo e envie novamente.'
-      return
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i]
+    prev.innerHTML = `<div class="preview-box">⏳ Lendo ${i+1} de ${files.length}: ${f.name}...</div>`
+    try {
+      const rows = await lerPlanilha(f)
+      if (!rows.length) { erros.push(`${f.name}: arquivo vazio`); continue }
+      const cabecalhos = Object.keys(rows[0] || {})
+      const faltando = COLUNAS_NECESSARIAS.filter(cl => !achouColuna(cabecalhos, cl.nomes)).map(cl => cl.label)
+      if (faltando.length) { erros.push(`${f.name}: faltam ${faltando.join(', ')}`); continue }
+      COLUNAS_PROIBIDAS.filter(cl => achouColuna(cabecalhos, cl.nomes)).forEach(cl => temPessoais.add(cl.label))
+      const linhas = transformar(rows).filter(r => r.codigo && String(r.codigo).trim())
+      porArquivo.push({ nome: f.name, qtd: linhas.length })
+      linhasHist = linhasHist.concat(linhas)
+    } catch(err) {
+      erros.push(`${f.name}: ${err.message}`)
     }
-
-    linhasHist = transformar(rows)
-    const comCodigo = linhasHist.filter(r => r.codigo && String(r.codigo).trim())
-    linhasHist = comCodigo
-
-    // Resumo do que veio no arquivo
-    const porEtapa = {}
-    linhasHist.forEach(r => { const e = (r.etapa||'—').trim(); porEtapa[e] = (porEtapa[e]||0)+1 })
-    const topo = Object.entries(porEtapa).sort((a,b)=>b[1]-a[1]).slice(0,6)
-
-    prev.innerHTML = `<div class="preview-box" id="preview-hist-box">
-      <div class="preview-linha"><span class="ok">✅</span> <b>${linhasHist.length}</b> propostas · <b>${cabecalhos.length}</b> colunas</div>
-      <div class="preview-linha">${proibidas.length ? '<span class="warn">🔓</span> Contém dados pessoais: <b>' + proibidas.join(', ') + '</b> — serão descartados na leitura' : '<span class="ok">🔒</span> Sem dados pessoais'}</div>
-      <div class="preview-cols">Etapas: ${topo.map(([e,n]) => `<b>${e}</b> (${n})`).join(' · ')}</div>
-    </div>`
-
-    status.className = 'alert alert-success'
-    status.innerHTML = `✅ Pronto para importar <b>${linhasHist.length}</b> propostas.`
-    btn.disabled = false
-  } catch(err) {
-    prev.innerHTML = `<div class="preview-box erro" id="preview-hist-box">❌ Erro ao ler: ${err.message}</div>`
-    status.className = 'alert alert-danger'
-    status.textContent = 'Não foi possível ler o arquivo.'
   }
+
+  if (erros.length && !linhasHist.length) {
+    prev.innerHTML = `<div class="preview-box erro">❌ Nenhum arquivo pôde ser lido:<br>${erros.join('<br>')}</div>`
+    status.className = 'alert alert-danger'
+    status.textContent = 'Corrija os arquivos e envie novamente.'
+    return
+  }
+
+  // Mesmo código em arquivos diferentes: fica a última ocorrência
+  const mapaCod = {}
+  linhasHist.forEach(r => { mapaCod[String(r.codigo).trim()] = r })
+  const duplicados = linhasHist.length - Object.keys(mapaCod).length
+  linhasHist = Object.values(mapaCod)
+
+  const porEtapa = {}
+  linhasHist.forEach(r => { const e = (r.etapa||'—').trim(); porEtapa[e] = (porEtapa[e]||0)+1 })
+  const topo = Object.entries(porEtapa).sort((a,b)=>b[1]-a[1]).slice(0,6)
+
+  prev.innerHTML = `<div class="preview-box">
+    <div class="preview-linha"><span class="ok">✅</span> <b>${linhasHist.length}</b> propostas únicas de <b>${porArquivo.length}</b> arquivo${porArquivo.length>1?'s':''}</div>
+    ${duplicados > 0 ? `<div class="preview-linha"><span class="warn">🔁</span> ${duplicados} código${duplicados>1?'s':''} repetido${duplicados>1?'s':''} entre arquivos — mantida a versão mais recente</div>` : ''}
+    <div class="preview-linha">${temPessoais.size ? '<span class="warn">🔓</span> Dados pessoais encontrados: <b>' + [...temPessoais].join(', ') + '</b> — descartados na leitura' : '<span class="ok">🔒</span> Sem dados pessoais'}</div>
+    ${erros.length ? `<div class="preview-linha"><span class="warn">⚠️</span> Ignorados: ${erros.join(' · ')}</div>` : ''}
+    <div class="preview-cols">Por arquivo: ${porArquivo.map(a => `<b>${a.nome}</b> (${a.qtd})`).join(' · ')}</div>
+    <div class="preview-cols">Etapas: ${topo.map(([e,n]) => `<b>${e}</b> (${n})`).join(' · ')}</div>
+  </div>`
+
+  status.className = 'alert alert-success'
+  status.innerHTML = `✅ Pronto para importar <b>${linhasHist.length}</b> propostas.`
+  btn.disabled = false
 }
 
 function setProgHist(pct, txt) {
@@ -1224,7 +1238,8 @@ async function importarHistorico() {
 
   try {
     // 1) Descobre quem já existe, para preservar o responsável
-    setProgHist(8, 'Verificando o que já existe no sistema...')
+    setProgHist(5, 'Verificando o que já existe no sistema...')
+    // Traz só as colunas necessárias — com dezenas de milhares isso pesa
     const existentes = await sbAll('propostas?select=codigo,responsavel,responsavel_final,observacao')
     const mapa = {}
     ;(existentes||[]).forEach(p => { mapa[String(p.codigo).trim()] = p })
@@ -1253,7 +1268,8 @@ async function importarHistorico() {
     })
 
     // 3) Grava em lotes (muito mais rápido que uma a uma)
-    const LOTE = 500
+    const LOTE = 1000
+    const inicio = Date.now()
     for (let i = 0; i < registros.length; i += LOTE) {
       const lote = registros.slice(i, i + LOTE)
       await sb('propostas?on_conflict=codigo', {
@@ -1261,8 +1277,13 @@ async function importarHistorico() {
         prefer: 'resolution=merge-duplicates,return=minimal',
         body: lote
       })
-      const pct = 20 + Math.round(((i + lote.length) / registros.length) * 75)
-      setProgHist(pct, `Importando... ${Math.min(i + LOTE, registros.length)} de ${registros.length}`)
+      const feitas = Math.min(i + LOTE, registros.length)
+      const pct = 20 + Math.round((feitas / registros.length) * 75)
+      // Estimativa de tempo restante, útil quando são dezenas de milhares
+      const decorrido = (Date.now() - inicio) / 1000
+      const restante = feitas ? Math.round((decorrido / feitas) * (registros.length - feitas)) : 0
+      const txtTempo = restante > 5 ? ` · ~${restante < 60 ? restante + 's' : Math.ceil(restante/60) + ' min'} restantes` : ''
+      setProgHist(pct, `Importando ${feitas.toLocaleString('pt-BR')} de ${registros.length.toLocaleString('pt-BR')}${txtTempo}`)
     }
 
     setProgHist(100, 'Concluído!')
