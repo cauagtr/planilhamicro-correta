@@ -529,6 +529,10 @@
   .bloco-import { display: none; }
   .bloco-import.aberto { display: block; }
 
+  .tag-opcional { font-size: 9px; font-weight: 700; color: #6b7280; background: #f1f5f9; padding: 2px 7px; border-radius: 8px; margin-left: 6px; border: 1px solid #e2e8f0; text-transform: none; letter-spacing: 0; }
+
+  .alert-warning { background: #FFF7ED; color: #7C2D12; border: 1px solid #FDBA74; padding: 12px 16px; border-radius: 8px; font-size: 12.5px; line-height: 1.5; }
+
   /* Separador do funil */
   .funil-sep { font-size: 10.5px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .5px; margin: 10px 0 4px; padding-top: 8px; border-top: 1px dashed var(--border); }
 
@@ -1048,6 +1052,7 @@ function setTab(tab) {
 // ABA PROCESSAR
 // ============================================================
 let arquivoAndamento = null
+let sumiramDoAndamento = []
 let arquivoFinalizados = null
 
 function renderProcessar() {
@@ -1069,7 +1074,7 @@ function renderProcessar() {
         </div>
       </div>
       <div>
-        <label>Projetos Finalizados</label>
+        <label>Projetos Finalizados <span class="tag-opcional">opcional</span></label>
         <div class="input-file-area" id="drop-finalizados" onclick="document.getElementById('file-finalizados').click()"
           ondragover="event.preventDefault();this.classList.add('over')"
           ondragleave="this.classList.remove('over')"
@@ -1240,7 +1245,7 @@ async function importarHistorico() {
     // 1) Descobre quem já existe, para preservar o responsável
     setProgHist(5, 'Verificando o que já existe no sistema...')
     // Traz só as colunas necessárias — com dezenas de milhares isso pesa
-    const existentes = await sbAll('propostas?select=codigo,responsavel,responsavel_final,observacao')
+    const existentes = await sbAll('propostas?select=codigo,responsavel,responsavel_final,observacao,linha_credito,data_cadastro')
     const mapa = {}
     ;(existentes||[]).forEach(p => { mapa[String(p.codigo).trim()] = p })
 
@@ -1252,13 +1257,15 @@ async function importarHistorico() {
       const chave = String(r.codigo).trim()
       const ja = mapa[chave]
       if (ja) atualizadas++; else novas++
+      // Nunca apaga um dado que já existe: se o arquivo vier sem a linha de
+      // crédito ou sem a data de cadastro, mantém o que já está no sistema.
       return {
         codigo: chave,
         etapa: r.etapa,
         valor: parseValor(r.valor),
-        linha_credito: r.linhaCredito || '',
+        linha_credito: r.linhaCredito || (ja ? (ja.linha_credito || '') : ''),
         na_etapa_desde: iso(r.naEtapaDe),
-        data_cadastro: iso(r.dataCadastro),
+        data_cadastro: iso(r.dataCadastro) || (ja ? ja.data_cadastro : null),
         // Preserva o que já existe; proposta nova entra sem responsável
         responsavel: ja ? ja.responsavel : 'N/A',
         responsavel_final: ja ? ja.responsavel_final : 'N/A',
@@ -1395,16 +1402,36 @@ async function processarArquivo(file, tipo) {
       : `<div class="fp-linha"><span class="fp-icone">🔒</span> Sem dados pessoais — OK</div>`}
     <div class="fp-cols">Colunas encontradas: <span class="fp-col-ok">${v.encontradas.join(', ')}</span></div>`
 
-  if (arquivoAndamento && arquivoFinalizados) {
-    const btn = document.getElementById('btn-processar')
-    const outroPrev = document.getElementById(`preview-${tipo === 'andamento' ? 'finalizados' : 'andamento'}`)
-    const outroOk = !outroPrev || !outroPrev.classList.contains('erro')
-    btn.disabled = !outroOk
-    if (outroOk) {
-      document.getElementById('proc-status').className = 'alert alert-success'
-      document.getElementById('proc-status').textContent = '✅ Arquivos validados. Clique em "Gerar Planilha de Hoje" para processar.'
-    }
+  atualizarBotaoProcessar()
+}
+
+// A planilha de Andamento é obrigatória. A de Finalizados é opcional:
+// serve para fechar o ciclo das propostas que saíram do andamento.
+function atualizarBotaoProcessar() {
+  const btn = document.getElementById('btn-processar')
+  const status = document.getElementById('proc-status')
+  if (!btn || !status) return
+
+  const erro = id => { const p = document.getElementById(`preview-${id}`); return p && p.classList.contains('erro') }
+
+  if (!arquivoAndamento) {
+    btn.disabled = true
+    status.className = 'alert alert-info'
+    status.textContent = 'Envie a planilha de Projetos em Andamento para começar.'
+    return
   }
+  if (erro('andamento') || (arquivoFinalizados && erro('finalizados'))) {
+    btn.disabled = true
+    status.className = 'alert alert-danger'
+    status.textContent = '❌ Corrija o arquivo com erro antes de processar.'
+    return
+  }
+
+  btn.disabled = false
+  status.className = 'alert alert-success'
+  status.innerHTML = arquivoFinalizados
+    ? '✅ Arquivos validados. Clique em "Gerar Planilha de Hoje" para processar.'
+    : '✅ Pronto para processar. <b>Sem a planilha de Finalizados</b>, as propostas concedidas/recusadas de hoje não serão atualizadas — o sistema avisa se detectar alguma.'
 }
 
 function lerPlanilha(file) {
@@ -1490,7 +1517,10 @@ async function processarPlanilhas() {
 
   try {
     setProgresso(10, 'Lendo planilhas...')
-    const [rowsAnd, rowsFin] = await Promise.all([lerPlanilha(arquivoAndamento), lerPlanilha(arquivoFinalizados)])
+    const [rowsAnd, rowsFin] = await Promise.all([
+      lerPlanilha(arquivoAndamento),
+      arquivoFinalizados ? lerPlanilha(arquivoFinalizados) : Promise.resolve([])
+    ])
 
     setProgresso(25, 'Buscando referência no Supabase...')
     const refs = await sb('planilha_referencia?select=dados&order=criado_em.desc&limit=1')
@@ -1499,11 +1529,22 @@ async function processarPlanilhas() {
     setProgresso(40, 'Processando dados...')
     let and = transformar(rowsAnd)
     let fin = transformar(rowsFin)
+
     fin = filtrarFinalizados(fin)
     const merged = deduplicar([...and, ...fin])
 
     // Buscar atribuições manuais já salvas no banco para preservá-las
-    const propostasExistentes = await sbAll('propostas?select=codigo,etapa,responsavel,responsavel_final,observacao')
+    const propostasExistentes = await sbAll('propostas?select=codigo,etapa,finalizada,responsavel,responsavel_final,observacao')
+    // Propostas que estão ATIVAS no sistema mas não vieram na planilha de
+    // Andamento: quase sempre significa que foram concedidas, recusadas ou
+    // excluídas. Sem a planilha de Finalizados, elas ficariam travadas.
+    const codigosAndamento = new Set(and.map(r => String(r.codigo).trim()))
+    const codigosFinalizados = new Set(fin.map(r => String(r.codigo).trim()))
+    sumiramDoAndamento = (propostasExistentes || [])
+      .filter(p => !p.finalizada
+                && !codigosAndamento.has(String(p.codigo).trim())
+                && !codigosFinalizados.has(String(p.codigo).trim()))
+      .map(p => ({ codigo: p.codigo, etapa: p.etapa, responsavel: p.responsavel }))
     const mapaAtribuicoes = {}
     if (propostasExistentes) {
       propostasExistentes.forEach(p => {
@@ -1555,7 +1596,7 @@ async function processarPlanilhas() {
       method: 'POST',
       prefer: 'return=minimal',
       body: {
-        arquivos_enviados: [arquivoAndamento.name, arquivoFinalizados.name],
+        arquivos_enviados: [arquivoAndamento.name, arquivoFinalizados ? arquivoFinalizados.name : null].filter(Boolean),
         total_propostas: propostas.length
       }
     })
@@ -1586,7 +1627,17 @@ async function processarPlanilhas() {
         <div class="stat-card"><div class="stat-label">Propostas Antigas</div><div class="stat-value" style="color:${naAtrib>0?'#92400e':'#166534'}">${naAtrib}</div></div>
         <div class="stat-card"><div class="stat-label">Andamento</div><div class="stat-value">${and.length}</div></div>
         <div class="stat-card"><div class="stat-label">Finalizados</div><div class="stat-value">${fin.length}</div></div>
+        ${sumiramDoAndamento.length ? `<div class="stat-card" style="background:#FFF7ED;border-color:#FDBA74"><div class="stat-label">⚠️ Saíram do andamento</div><div class="stat-value" style="color:#EA580C">${sumiramDoAndamento.length}</div><div class="stat-sub">precisam de conferência</div></div>` : ''}
       </div>
+      ${sumiramDoAndamento.length ? `
+      <div class="alert alert-warning" style="margin-top:14px">
+        <b>${sumiramDoAndamento.length} proposta${sumiramDoAndamento.length>1?'s':''} ${sumiramDoAndamento.length>1?'sumiram':'sumiu'} da planilha de Andamento.</b><br>
+        Isso quase sempre quer dizer que foram concedidas, recusadas ou excluídas.
+        Enquanto não entrar a planilha de <b>Projetos Finalizados</b>, elas continuam marcadas como ativas no sistema.
+        <div style="margin-top:8px;font-size:11.5px;font-family:'IBM Plex Mono',monospace;color:#7c2d12">
+          ${sumiramDoAndamento.slice(0,12).map(p => p.codigo).join(' · ')}${sumiramDoAndamento.length>12 ? ` … e mais ${sumiramDoAndamento.length-12}` : ''}
+        </div>
+      </div>` : ''}
       <button class="btn btn-primary" onclick="setTab('propostas');carregarPropostas()">Ver Propostas →</button>`
 
     showToast(`${propostas.length} propostas processadas com sucesso!`)
