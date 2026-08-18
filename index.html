@@ -533,6 +533,12 @@
 
   .alert-warning { background: #FFF7ED; color: #7C2D12; border: 1px solid #FDBA74; padding: 12px 16px; border-radius: 8px; font-size: 12.5px; line-height: 1.5; }
 
+  .obs-hist { max-height: 160px; overflow-y: auto; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 4px; }
+  .obs-hist-item { padding: 7px 10px; border-bottom: 1px dashed var(--border); font-size: 12px; line-height: 1.45; }
+  .obs-hist-item:last-child { border-bottom: none; }
+  .obs-hist-data { font-size: 10.5px; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 2px; }
+  .obs-hist-vazio { display: block; padding: 10px; font-size: 12px; color: #94a3b8; text-align: center; }
+
   /* Separador do funil */
   .funil-sep { font-size: 10.5px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .5px; margin: 10px 0 4px; padding-top: 8px; border-top: 1px dashed var(--border); }
 
@@ -648,10 +654,10 @@
     <div class="modal-title" id="modal-title">Observação</div>
     <div class="modal-info" id="modal-info"></div>
     <div style="margin-bottom:10px">
-      <label style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Observação anterior</label>
-      <div class="obs-antiga" id="modal-obs-antiga">—</div>
+      <label style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Histórico de observações</label>
+      <div class="obs-hist" id="modal-obs-hist"><span class="obs-hist-vazio">—</span></div>
     </div>
-    <label style="margin-bottom:6px">Nova observação</label>
+    <label style="margin-bottom:6px">Observação atual</label>
     <textarea id="modal-textarea" rows="4" placeholder="Digite a observação..."></textarea>
     <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">
       <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
@@ -1479,22 +1485,26 @@ function deduplicar(rows) {
 function aplicarVlookup(rows, ref, mapaAtribuicoes = {}) {
   return rows.map(row => {
     const chave = String(row.codigo).trim()
-    // Prioridade 1: atribuição manual já salva no banco
+    // Prioridade 1: o que já está salvo no banco
     const atrib = mapaAtribuicoes[chave]
     if (atrib) {
       return {
         ...row,
-        observacoesAnteriores: atrib.observacao || '',
+        // A observação PERMANECE até alguém alterá-la pela tela.
+        // O processamento não apaga nem move mais nada.
+        observacaoAtual: atrib.observacao || '',
+        observacoesAnteriores: atrib.observacoes_anteriores || '',
         responsavel: atrib.responsavel,
         responsavelFinal: atrib.responsavel_final,
       }
     }
-    // Prioridade 2: referência do dia anterior
-    const r = ref.find(x => String(x.codigo).trim() === String(row.codigo).trim())
+    // Prioridade 2: referência do processamento anterior (proposta nova)
+    const r = ref.find(x => String(x.codigo).trim() === chave)
     const resp = r && r.responsavel_final && r.responsavel_final !== 'N/A' ? r.responsavel_final : 'N/A'
     return {
       ...row,
-      observacoesAnteriores: r ? (r.observacao || '') : '',
+      observacaoAtual: r ? (r.observacao || '') : '',
+      observacoesAnteriores: '',
       responsavel: resp,
       responsavelFinal: resp,
     }
@@ -1534,7 +1544,7 @@ async function processarPlanilhas() {
     const merged = deduplicar([...and, ...fin])
 
     // Buscar atribuições manuais já salvas no banco para preservá-las
-    const propostasExistentes = await sbAll('propostas?select=codigo,etapa,finalizada,responsavel,responsavel_final,observacao')
+    const propostasExistentes = await sbAll('propostas?select=codigo,etapa,finalizada,responsavel,responsavel_final,observacao,observacoes_anteriores')
     // Propostas que estão ATIVAS no sistema mas não vieram na planilha de
     // Andamento: quase sempre significa que foram concedidas, recusadas ou
     // excluídas. Sem a planilha de Finalizados, elas ficariam travadas.
@@ -1552,7 +1562,8 @@ async function processarPlanilhas() {
           mapaAtribuicoes[String(p.codigo).trim()] = {
             responsavel: p.responsavel,
             responsavel_final: p.responsavel_final,
-            observacao: p.observacao || ''
+            observacao: p.observacao || '',
+            observacoes_anteriores: p.observacoes_anteriores || ''
           }
         }
       })
@@ -1575,7 +1586,7 @@ async function processarPlanilhas() {
         catch(e) { return null }
       })(),
       observacoes_anteriores: r.observacoesAnteriores || '',
-      observacao: '',
+      observacao: r.observacaoAtual || '',
       responsavel_final: r.responsavelFinal || 'N/A',
     }))
 
@@ -2390,9 +2401,29 @@ function abrirModal(codigo, obs, obsAntiga) {
   modalCodigo = codigo
   document.getElementById('modal-title').textContent = 'Observação'
   document.getElementById('modal-info').textContent = `Código da Operação: ${codigo}`
-  document.getElementById('modal-obs-antiga').textContent = obsAntiga || '—'
   document.getElementById('modal-textarea').value = obs || ''
   document.getElementById('modal-obs').style.display = 'flex'
+  carregarHistoricoObs(codigo, obsAntiga)
+}
+
+// Busca as versões anteriores da observação desta proposta
+async function carregarHistoricoObs(codigo, obsAntigaLegado) {
+  const el = document.getElementById('modal-obs-hist')
+  el.innerHTML = '<span class="obs-hist-vazio">⏳ Carregando...</span>'
+  try {
+    const hist = await sb(`observacoes_historico?select=texto,criado_em&codigo=eq.${encodeURIComponent(codigo)}&order=criado_em.desc&limit=30`)
+    if (hist && hist.length) {
+      el.innerHTML = hist.map(h => {
+        const d = h.criado_em ? new Date(h.criado_em).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''
+        return `<div class="obs-hist-item"><span class="obs-hist-data">${d}</span>${h.texto}</div>`
+      }).join('')
+      return
+    }
+  } catch(e) { /* tabela ainda não criada: cai no modo antigo */ }
+  // Sem histórico: mostra a observação anterior que já estava gravada
+  el.innerHTML = obsAntigaLegado
+    ? `<div class="obs-hist-item"><span class="obs-hist-data">registro anterior</span>${obsAntigaLegado}</div>`
+    : '<span class="obs-hist-vazio">Nenhuma observação anterior</span>'
 }
 
 function fecharModal(e) {
@@ -2407,12 +2438,22 @@ async function salvarObservacao() {
   const btn = document.getElementById('btn-salvar-obs')
   btn.disabled = true; btn.textContent = 'Salvando...'
   try {
+    // Antes de trocar, guarda a versão que está saindo
+    const idx = todasPropostas.findIndex(p => p.codigo === modalCodigo)
+    const anterior = idx !== -1 ? (todasPropostas[idx].observacao || '').trim() : ''
+    if (anterior && anterior !== obs) {
+      try {
+        await sb('observacoes_historico', {
+          method: 'POST', prefer: 'return=minimal',
+          body: { codigo: modalCodigo, texto: anterior }
+        })
+      } catch(e) { /* se a tabela não existir, segue e salva assim mesmo */ }
+    }
     await sb(`propostas?codigo=eq.${encodeURIComponent(modalCodigo)}`, {
       method: 'PATCH',
       prefer: 'return=minimal',
       body: { observacao: obs }
     })
-    const idx = todasPropostas.findIndex(p => p.codigo === modalCodigo)
     if (idx !== -1) todasPropostas[idx].observacao = obs
     document.getElementById('modal-obs').style.display = 'none'
     modalCodigo = null
