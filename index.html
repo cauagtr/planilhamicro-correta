@@ -539,6 +539,13 @@
   .obs-hist-data { font-size: 10.5px; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 2px; }
   .obs-hist-vazio { display: block; padding: 10px; font-size: 12px; color: #94a3b8; text-align: center; }
 
+  .ident-chip { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 600; color: #475569; background: #f1f5f9; padding: 3px 8px; border-radius: 5px; letter-spacing: .3px; white-space: nowrap; }
+  .ident-chip.ident-num { color: #1E40AF; background: #EFF6FF; }
+
+  .ultima-atu { font-size: 11.5px; font-weight: 600; color: #64748b; background: #f1f5f9; padding: 5px 12px; border-radius: 20px; white-space: nowrap; }
+  .ultima-atu.alerta { background: #FFF7ED; color: #C2410C; }
+  .ultima-atu.sem { background: #FEF3C7; color: #92400E; }
+
   /* Separador do funil */
   .funil-sep { font-size: 10.5px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .5px; margin: 10px 0 4px; padding-top: 8px; border-top: 1px dashed var(--border); }
 
@@ -1251,7 +1258,7 @@ async function importarHistorico() {
     // 1) Descobre quem já existe, para preservar o responsável
     setProgHist(5, 'Verificando o que já existe no sistema...')
     // Traz só as colunas necessárias — com dezenas de milhares isso pesa
-    const existentes = await sbAll('propostas?select=codigo,responsavel,responsavel_final,observacao,linha_credito,data_cadastro')
+    const existentes = await sbAll('propostas?select=codigo,responsavel,responsavel_final,observacao,linha_credito,data_cadastro,razao_ini,cnpj_ini')
     const mapa = {}
     ;(existentes||[]).forEach(p => { mapa[String(p.codigo).trim()] = p })
 
@@ -1270,6 +1277,8 @@ async function importarHistorico() {
         etapa: r.etapa,
         valor: parseValor(r.valor),
         linha_credito: r.linhaCredito || (ja ? (ja.linha_credito || '') : ''),
+        razao_ini: r.razaoIni || (ja ? (ja.razao_ini || '') : ''),
+        cnpj_ini: r.cnpjIni || (ja ? (ja.cnpj_ini || '') : ''),
         na_etapa_desde: iso(r.naEtapaDe),
         data_cadastro: iso(r.dataCadastro) || (ja ? ja.data_cadastro : null),
         // Preserva o que já existe; proposta nova entra sem responsável
@@ -1338,11 +1347,21 @@ const COLUNAS_NECESSARIAS = [
 ]
 
 // Colunas que NÃO devem estar presentes (dados pessoais)
+// Só o Email continua totalmente descartado.
+// Nome e CNPJ passam a ser aproveitados, mas SOMENTE os 5 primeiros
+// caracteres — o suficiente para reconhecer a proposta na tela.
 const COLUNAS_PROIBIDAS = [
-  { nomes: ['Nome do Cliente','Razão Social','Razao Social'], label: 'Nome do Cliente' },
-  { nomes: ['CPF/CNPJ','CNPJ','CPF'], label: 'CPF/CNPJ' },
   { nomes: ['Email','E-mail'], label: 'Email' },
 ]
+
+// Guarda apenas o começo da razão social (5 caracteres)
+function inicioRazao(txt) {
+  return String(txt ?? '').trim().substring(0, 5).toUpperCase()
+}
+// Guarda apenas os 5 primeiros dígitos do CNPJ
+function inicioCnpj(txt) {
+  return String(txt ?? '').replace(/\D/g, '').substring(0, 5)
+}
 
 function achouColuna(cabecalhos, nomes) {
   return nomes.some(n => cabecalhos.some(c => c.trim().toLowerCase() === n.toLowerCase()))
@@ -1464,6 +1483,8 @@ function transformar(rows) {
     naEtapaDe: parseData(getCol(row,'Na Etapa Desde','Na Etapa De')),
     dataCadastro: parseData(getCol(row,'Data de Cadastro','Data Cadastro','Data de cadastro')),
     linhaCredito: normalizarLinhaCredito(getCol(row,'Linha de Crédito','Linha de Credito','Linha do Crédito','Linha')),
+    razaoIni: inicioRazao(getCol(row,'Nome do Cliente','Razão Social','Razao Social','Nome')),
+    cnpjIni: inicioCnpj(getCol(row,'CPF/CNPJ','CNPJ','CPF','CPF_CNPJ')),
   }))
 }
 
@@ -1577,6 +1598,8 @@ async function processarPlanilhas() {
       etapa: r.etapa,
       valor: parseValor(r.valor),
       linha_credito: r.linhaCredito || '',
+      razao_ini: r.razaoIni || '',
+      cnpj_ini: r.cnpjIni || '',
       na_etapa_desde: (() => {
         try { return r.naEtapaDe && !isNaN(r.naEtapaDe.getTime()) ? r.naEtapaDe.toISOString().split('T')[0] : null }
         catch(e) { return null }
@@ -1669,7 +1692,9 @@ async function processarPlanilhas() {
 // ============================================================
 let todasPropostas = []
 let filtroColab = 'TODOS'
-let mostrarFinalizadas = false  // por padrão, esconde as finalizadas do fluxo do dia a dia
+let mostrarFinalizadas = false
+// Data/hora do último processamento de planilha, mostrada na aba Propostas
+let ultimaAtualizacao = null  // por padrão, esconde as finalizadas do fluxo do dia a dia
 let filtroEtapa = ''
 let filtroLinhaCredito = ''
 let filtroSearch = ''
@@ -1772,6 +1797,11 @@ async function carregarPropostas() {
     // e mantém a tela rápida mesmo com dezenas de milhares no histórico.
     const data = await sbAll('propostas?select=*&finalizada=eq.false&order=codigo.asc')
     todasPropostas = data || []
+    // Descobre quando foi o último processamento, para mostrar na tela
+    try {
+      const h = await sb('historico_processamentos?select=criado_em&order=criado_em.desc&limit=1')
+      ultimaAtualizacao = (h && h[0]) ? h[0].criado_em : null
+    } catch(e) { ultimaAtualizacao = null }
     finalizadasCarregadas = false
     popularSelectEtapas()
     renderTabelaPropostas()
@@ -1986,6 +2016,19 @@ function valorNum(p) {
   return corrigirValor(n)
 }
 
+// Texto da última atualização da planilha, com destaque se estiver antiga
+function textoUltimaAtualizacao() {
+  if (!ultimaAtualizacao) return '<span class="ultima-atu sem">Sem processamento registrado</span>'
+  const d = new Date(ultimaAtualizacao)
+  const quando = d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
+  const dias = diasParados(d.toISOString().split('T')[0])
+  const atrasada = dias !== null && dias >= 2
+  const rel = dias === 0 ? 'hoje' : dias === 1 ? 'ontem' : `há ${dias} dias`
+  return `<span class="ultima-atu ${atrasada ? 'alerta' : ''}" title="Data e hora do último processamento de planilha">
+    ${atrasada ? '⚠️' : '🕒'} Atualizado ${rel} · ${quando}
+  </span>`
+}
+
 function renderStatsPropostas() {
   const el = document.getElementById('dashboard-propostas')
   if (!el) return
@@ -2041,7 +2084,10 @@ function renderStatsPropostas() {
   el.innerHTML = `
     <div class="dash-header">
       <div class="dash-title">📈 Painel de Indicadores</div>
-      <div class="dash-context">${contexto}</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
+        ${textoUltimaAtualizacao()}
+        <div class="dash-context">${contexto}</div>
+      </div>
     </div>
     <div class="dash-grid">${cards}</div>`
 }
@@ -2102,6 +2148,8 @@ function renderTabelaPropostas() {
   const cols = [
     {key:'responsavel', label:'Responsável'},
     {key:'codigo', label:'Código da Operação'},
+    {key:'razao_ini', label:'Razão', ajuda:'Os 5 primeiros caracteres da razao social, so para reconhecer a proposta de bate-olho.'},
+    {key:'cnpj_ini', label:'CNPJ', ajuda:'Os 5 primeiros digitos do CNPJ. O restante nao e guardado pelo sistema.'},
     {key:'linha_credito', label:'Linha'},
     {key:'etapa', label:'Etapa'},
     {key:'valor', label:'Valor', align:'right'},
@@ -2175,6 +2223,8 @@ function renderTabelaPropostas() {
       <td class="check-col"><input type="checkbox" class="row-check" ${estaSel?'checked':''} onclick="toggleSelecionada('${p.codigo}', this.checked)"/></td>
       ${respCell}
       <td class="td-cnpj" style="font-weight:700">${p.codigo||'—'}</td>
+      <td><span class="ident-chip">${p.razao_ini || '—'}</span></td>
+      <td><span class="ident-chip ident-num">${p.cnpj_ini || '—'}</span></td>
       <td>${linhaBadge(p.linha_credito)}</td>
       <td class="td-etapa">${etapaBadge(p.etapa)}</td>
       <td class="td-valor">${formatValor(p.valor)}</td>
