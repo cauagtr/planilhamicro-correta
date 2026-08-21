@@ -44,7 +44,7 @@
   .tab-btn.active { color: var(--dourado); border-bottom-color: var(--dourado); }
 
   /* CONTAINER */
-  main { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
+  main { max-width: 1900px; margin: 0 auto; padding: 24px 20px; }
 
   /* CARDS */
   .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
@@ -110,6 +110,18 @@
 
   /* ── TABELA REDESENHADA (Fase 1) ── */
   .table-wrap { max-height: 640px; overflow-y: auto; overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  /* Tudo visível de uma vez: colunas mais enxutas, sem rolagem lateral */
+  .table-wrap table { table-layout: auto; width: 100%; }
+  .table-wrap thead th { padding: 10px 6px; font-size: 10.5px; }
+  .table-wrap tbody td { padding: 8px 6px; font-size: 12px; }
+  .table-wrap .etapa-badge { font-size: 10px; padding: 3px 7px; }
+  .table-wrap .resp-nome { font-size: 11.5px; }
+  .table-wrap .resp-avatar { width: 25px; height: 25px; font-size: 9px; }
+  .table-wrap .linha-badge { font-size: 9.5px; padding: 2px 6px; }
+  .table-wrap .ident-chip { font-size: 10.5px; padding: 2px 6px; }
+  .table-wrap .td-valor { font-size: 11.5px; }
+  .table-wrap .obs-btn, .table-wrap .btn-obs { max-width: 130px; font-size: 11px; }
+  .table-wrap .dd-trigger { font-size: 11px; padding: 4px 9px; }
   thead th { position: sticky; top: 0; z-index: 10; background: #f1f5f9; box-shadow: 0 2px 0 rgba(0,0,0,0.06); }
   tbody tr { background: #fff; transition: background .12s; }
   tbody tr:nth-child(even) { background: #fafbfc; }
