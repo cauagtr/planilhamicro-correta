@@ -551,6 +551,7 @@
   .obs-hist-data { font-size: 10.5px; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 2px; }
   .obs-hist-vazio { display: block; padding: 10px; font-size: 12px; color: #94a3b8; text-align: center; }
 
+  .td-razao { font-size: 12px; font-weight: 500; color: #334155; max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ident-chip { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 600; color: #475569; background: #f1f5f9; padding: 3px 8px; border-radius: 5px; letter-spacing: .3px; white-space: nowrap; }
   .ident-chip.ident-num { color: #1E40AF; background: #EFF6FF; }
 
@@ -1270,7 +1271,7 @@ async function importarHistorico() {
     // 1) Descobre quem já existe, para preservar o responsável
     setProgHist(5, 'Verificando o que já existe no sistema...')
     // Traz só as colunas necessárias — com dezenas de milhares isso pesa
-    const existentes = await sbAll('propostas?select=codigo,responsavel,responsavel_final,observacao,linha_credito,data_cadastro,razao_ini,cnpj_ini')
+    const existentes = await sbAll('propostas?select=codigo,responsavel,responsavel_final,observacao,linha_credito,data_cadastro,razao_social')
     const mapa = {}
     ;(existentes||[]).forEach(p => { mapa[String(p.codigo).trim()] = p })
 
@@ -1289,8 +1290,7 @@ async function importarHistorico() {
         etapa: r.etapa,
         valor: parseValor(r.valor),
         linha_credito: r.linhaCredito || (ja ? (ja.linha_credito || '') : ''),
-        razao_ini: r.razaoIni || (ja ? (ja.razao_ini || '') : ''),
-        cnpj_ini: r.cnpjIni || (ja ? (ja.cnpj_ini || '') : ''),
+        razao_social: r.razaoSocial || (ja ? (ja.razao_social || '') : ''),
         na_etapa_desde: iso(r.naEtapaDe),
         data_cadastro: iso(r.dataCadastro) || (ja ? ja.data_cadastro : null),
         // Preserva o que já existe; proposta nova entra sem responsável
@@ -1366,13 +1366,16 @@ const COLUNAS_PROIBIDAS = [
   { nomes: ['Email','E-mail'], label: 'Email' },
 ]
 
-// Guarda apenas o começo da razão social (5 caracteres)
-function inicioRazao(txt) {
-  return String(txt ?? '').trim().substring(0, 5).toUpperCase()
-}
-// Guarda apenas os 5 primeiros dígitos do CNPJ
-function inicioCnpj(txt) {
-  return String(txt ?? '').replace(/\D/g, '').substring(0, 5)
+// Limpa a razão social, tirando os números de documento.
+// No FomentoNet, cerca de um terço das razões sociais de MEI vem no
+// formato "18.399.134 MIKAEL LINCOLN MOURA MUNIZ" — o CNPJ na frente.
+// Outras trazem o CPF no fim: "DAVID STONOGA 53604806968".
+function limparRazaoSocial(txt) {
+  let t = String(txt ?? '').trim()
+  if (!t) return ''
+  t = t.replace(/^[\d./\-\s]+/, '')        // documento no começo
+  t = t.replace(/\s+[\d./\-]{9,}$/, '')     // documento no fim
+  return t.trim()
 }
 
 function achouColuna(cabecalhos, nomes) {
@@ -1495,8 +1498,7 @@ function transformar(rows) {
     naEtapaDe: parseData(getCol(row,'Na Etapa Desde','Na Etapa De')),
     dataCadastro: parseData(getCol(row,'Data de Cadastro','Data Cadastro','Data de cadastro')),
     linhaCredito: normalizarLinhaCredito(getCol(row,'Linha de Crédito','Linha de Credito','Linha do Crédito','Linha')),
-    razaoIni: inicioRazao(getCol(row,'Nome do Cliente','Razão Social','Razao Social','Nome')),
-    cnpjIni: inicioCnpj(getCol(row,'CPF/CNPJ','CNPJ','CPF','CPF_CNPJ')),
+    razaoSocial: limparRazaoSocial(getCol(row,'Nome do Cliente','Razão Social','Razao Social','Nome')),
   }))
 }
 
@@ -1610,8 +1612,7 @@ async function processarPlanilhas() {
       etapa: r.etapa,
       valor: parseValor(r.valor),
       linha_credito: r.linhaCredito || '',
-      razao_ini: r.razaoIni || '',
-      cnpj_ini: r.cnpjIni || '',
+      razao_social: r.razaoSocial || '',
       na_etapa_desde: (() => {
         try { return r.naEtapaDe && !isNaN(r.naEtapaDe.getTime()) ? r.naEtapaDe.toISOString().split('T')[0] : null }
         catch(e) { return null }
@@ -1740,7 +1741,7 @@ function renderPropostas() {
       }).join('')}
     </div>
     <div class="filtros-row">
-      <input type="text" class="search-input" placeholder="🔍 Buscar por código ou etapa..." oninput="setSearch(this.value)" value="${filtroSearch}"/>
+      <input type="text" class="search-input" placeholder="🔍 Buscar por código, razão social ou etapa..." oninput="setSearch(this.value)" value="${filtroSearch}"/>
       <button class="btn btn-secondary btn-sm btn-filtro-toggle" id="btn-fa-toggle" onclick="toggleFiltrosAvancados()">
         ⚙ Filtros <span id="fa-badge"></span>
       </button>
@@ -1891,7 +1892,8 @@ function getLinhasVisiveis() {
     const q = filtroSearch.toLowerCase()
     rows = rows.filter(p =>
       String(p.codigo||'').toLowerCase().includes(q) ||
-      (p.etapa||'').toLowerCase().includes(q)
+      (p.etapa||'').toLowerCase().includes(q) ||
+      (p.razao_social||'').toLowerCase().includes(q)
     )
   }
   rows.sort((a,b) => {
@@ -2160,8 +2162,7 @@ function renderTabelaPropostas() {
   const cols = [
     {key:'responsavel', label:'Responsável'},
     {key:'codigo', label:'Código da Operação'},
-    {key:'razao_ini', label:'Razão', ajuda:'Os 5 primeiros caracteres da razao social, so para reconhecer a proposta de bate-olho.'},
-    {key:'cnpj_ini', label:'CNPJ', ajuda:'Os 5 primeiros digitos do CNPJ. O restante nao e guardado pelo sistema.'},
+    {key:'razao_social', label:'Razão Social', ajuda:'Nome da empresa ou do cliente, sem os numeros do documento. O CNPJ nao e guardado pelo sistema.'},
     {key:'linha_credito', label:'Linha'},
     {key:'etapa', label:'Etapa'},
     {key:'valor', label:'Valor', align:'right'},
@@ -2235,8 +2236,7 @@ function renderTabelaPropostas() {
       <td class="check-col"><input type="checkbox" class="row-check" ${estaSel?'checked':''} onclick="toggleSelecionada('${p.codigo}', this.checked)"/></td>
       ${respCell}
       <td class="td-cnpj" style="font-weight:700">${p.codigo||'—'}</td>
-      <td><span class="ident-chip">${p.razao_ini || '—'}</span></td>
-      <td><span class="ident-chip ident-num">${p.cnpj_ini || '—'}</span></td>
+      <td class="td-razao" title="${(p.razao_social||'').replace(/"/g,'&quot;')}">${p.razao_social || '<span style="color:#cbd5e1">—</span>'}</td>
       <td>${linhaBadge(p.linha_credito)}</td>
       <td class="td-etapa">${etapaBadge(p.etapa)}</td>
       <td class="td-valor">${formatValor(p.valor)}</td>
