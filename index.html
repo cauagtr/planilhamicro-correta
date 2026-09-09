@@ -559,6 +559,13 @@
   .ultima-atu.alerta { background: #FFF7ED; color: #C2410C; }
   .ultima-atu.sem { background: #FEF3C7; color: #92400E; }
 
+  .td-obs { font-size: 11.5px; line-height: 1.4; color: #334155; cursor: pointer; max-width: 260px; white-space: normal; }
+  .td-obs:hover { background: #f1f5f9; }
+  .td-obs.vazia { color: #cbd5e1; font-style: italic; }
+  .td-obs.vazia:hover { color: var(--azul); }
+  .obs-data { font-weight: 700; color: #64748b; }
+  .obs-texto { color: #334155; }
+
   /* Separador do funil */
   .funil-sep { font-size: 10.5px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .5px; margin: 10px 0 4px; padding-top: 8px; border-top: 1px dashed var(--border); }
 
@@ -945,9 +952,21 @@ function diasParados(v) {
   return diff >= 0 ? diff : null
 }
 
-const DIAS_LIMITE_PARADA = 15
+const DIAS_LIMITE_PARADA = 30
 
 // Renderiza a célula de data com alerta se estiver parada há muito tempo (só para ativas)
+// Data curta da observação, no formato "26/08 - "
+function dataObs(v) {
+  if (!v) return ''
+  try {
+    const d = new Date(v)
+    if (isNaN(d.getTime())) return ''
+    const dia = String(d.getDate()).padStart(2,'0')
+    const mes = String(d.getMonth()+1).padStart(2,'0')
+    return `${dia}/${mes} - `
+  } catch(e) { return '' }
+}
+
 function celulaData(p) {
   const ativa = ehAtiva(p.etapa)
   const dias = diasParados(p.na_etapa_desde)
@@ -2175,7 +2194,7 @@ function renderStatsPropostas() {
     <div class="dash-card accent-verde"><div class="dash-label">Ativas</div><div class="dash-value">${totalAtivas}</div><div class="dash-sub">em tratativa</div></div>
     <div class="dash-card accent-dourado"><div class="dash-label">Valor em Tratativa<span class="ajuda ajuda-baixo" data-ajuda="Soma do valor apenas das propostas ATIVAS (em andamento). Não inclui Concedido, Recusado nem Excluído.">?</span></div><div class="dash-value" style="font-size:19px">${formatValor(valorAtivo)}</div><div class="dash-sub">só propostas ativas</div></div>
     <div class="dash-card accent-roxo"><div class="dash-label">Valor Total<span class="ajuda ajuda-baixo" data-ajuda="Soma do valor de TODAS as propostas do filtro atual, incluindo as já finalizadas.">?</span></div><div class="dash-value" style="font-size:19px">${formatValor(valorTotal)}</div><div class="dash-sub">todas as propostas</div></div>
-    <div class="dash-card accent-parada"><div class="dash-label">⚠️ Paradas 15+ dias<span class="ajuda ajuda-baixo" data-ajuda="Propostas ativas que estão há 15 dias ou mais na mesma etapa sem avançar. Só conta propostas em andamento.">?</span></div><div class="dash-value" style="color:${paradas>0?'#dc2626':'#16a34a'}">${paradas}</div><div class="dash-sub">propostas ativas</div></div>
+    <div class="dash-card accent-parada"><div class="dash-label">⚠️ Paradas 30+ dias<span class="ajuda ajuda-baixo" data-ajuda="Propostas ativas que estão há 30 dias ou mais na mesma etapa sem avançar. Só conta propostas em andamento.">?</span></div><div class="dash-value" style="color:${paradas>0?'#dc2626':'#16a34a'}">${paradas}</div><div class="dash-sub">propostas ativas</div></div>
     <div class="dash-card accent-cinza"><div class="dash-label">Média de Dias Parados<span class="ajuda ajuda-baixo ajuda-esq" data-ajuda="Média de quantos dias as propostas ativas estão paradas na etapa atual. Ajuda a medir a velocidade de andamento.">?</span></div><div class="dash-value">${mediaDias}<span style="font-size:14px;font-weight:600;color:#9ca3af"> dias</span></div><div class="dash-sub">média das ativas na etapa</div></div>`
 
   el.innerHTML = `
@@ -2298,13 +2317,14 @@ function renderTabelaPropostas() {
          </div></td>`
 
     const obs = p.observacao || ''
+    // A observação aparece direto na linha, com a data na frente.
+    // Clicar em qualquer lugar da célula abre o editor.
+    const abrirObs = `abrirModal('${p.codigo}','${(obs).replace(/'/g,"\\'")}','${(p.observacoes_anteriores||'').replace(/'/g,"\\'")}')`
     const obsCell = obs
-      ? `<td><button class="btn btn-secondary btn-sm" onclick="abrirModal('${p.codigo}','${(obs).replace(/'/g,"\\'")}','${(p.observacoes_anteriores||'').replace(/'/g,"\\'")}')">
-           <span class="obs-indicator"><span class="obs-dot"></span>✏ Ver/Editar</span>
-         </button></td>`
-      : `<td><button class="btn btn-secondary btn-sm" style="color:#9ca3af" onclick="abrirModal('${p.codigo}','','${(p.observacoes_anteriores||'').replace(/'/g,"\\'")}')">
-           + Adicionar
-         </button></td>`
+      ? `<td class="td-obs" onclick="${abrirObs}" title="Clique para editar">
+           <span class="obs-data">${dataObs(p.observacao_em)}</span><span class="obs-texto">${obs}</span>
+         </td>`
+      : `<td class="td-obs vazia" onclick="${abrirObs}">+ adicionar observação</td>`
 
     const etapasFin = ['concedido','excluído','excluido','recusado']
     const ehAtiva = !etapasFin.includes((p.etapa||'').toLowerCase().trim())
@@ -2594,12 +2614,16 @@ async function salvarObservacao() {
         })
       } catch(e) { /* se a tabela não existir, segue e salva assim mesmo */ }
     }
+    const agora = new Date().toISOString()
     await sb(`propostas?codigo=eq.${encodeURIComponent(modalCodigo)}`, {
       method: 'PATCH',
       prefer: 'return=minimal',
-      body: { observacao: obs }
+      body: { observacao: obs, observacao_em: obs ? agora : null }
     })
-    if (idx !== -1) todasPropostas[idx].observacao = obs
+    if (idx !== -1) {
+      todasPropostas[idx].observacao = obs
+      todasPropostas[idx].observacao_em = obs ? agora : null
+    }
     document.getElementById('modal-obs').style.display = 'none'
     modalCodigo = null
     showToast('Observação salva!')
@@ -2773,7 +2797,7 @@ function exportarExcel() {
     { Indicador: 'Filtro aplicado', Valor: nomeContextoFiltro() },
     { Indicador: 'Total de propostas', Valor: rows.length },
     { Indicador: 'Em tratativa (ativas)', Valor: ativas.length },
-    { Indicador: 'Paradas 15+ dias', Valor: paradas.length },
+    { Indicador: 'Paradas 30+ dias', Valor: paradas.length },
     { Indicador: 'Valor total', Valor: totalValor },
     { Indicador: 'Valor em tratativa', Valor: ativas.reduce((s,p) => s + valorNum(p), 0) },
   ]
@@ -2848,7 +2872,7 @@ function exportarPDF() {
   <div class="cards">
     <div class="card"><div class="lbl">Total de Propostas</div><div class="val">${rows.length}</div></div>
     <div class="card"><div class="lbl">Em Tratativa</div><div class="val">${ativas.length}</div></div>
-    <div class="card ${paradas.length ? 'alerta' : ''}"><div class="lbl">Paradas 15+ dias</div><div class="val">${paradas.length}</div></div>
+    <div class="card ${paradas.length ? 'alerta' : ''}"><div class="lbl">Paradas 30+ dias</div><div class="val">${paradas.length}</div></div>
     <div class="card"><div class="lbl">Valor em Tratativa</div><div class="val" style="font-size:12px">${formatValor(valorAtivo)}</div></div>
     <div class="card"><div class="lbl">Valor Total</div><div class="val" style="font-size:12px">${formatValor(totalValor)}</div></div>
   </div>
@@ -2955,7 +2979,7 @@ function renderPainel() {
       <div class="dash-card accent-verde"><div class="dash-label">Em Tratativa</div><div class="dash-value">${d.ativas.length}</div><div class="dash-sub">${formatValor(d.valorAtivo)}</div></div>
       <div class="dash-card accent-roxo"><div class="dash-label">Concedidas</div><div class="dash-value">${d.concedidas.length}</div><div class="dash-sub">${formatValor(d.valorConcedido)} · ${pctConc}%</div></div>
       <div class="dash-card accent-vermelho"><div class="dash-label">Recusadas + Excluídas<span class="ajuda ajuda-baixo" data-ajuda="Recusado e Excluído são somados juntos como propostas que não seguiram adiante. O percentual é sobre o total de propostas do filtro.">?</span></div><div class="dash-value">${d.naoConcedidas.length}</div><div class="dash-sub">${formatValor(d.valorNaoConcedido)} · ${pctNaoConc}%</div></div>
-      <div class="dash-card accent-parada"><div class="dash-label">⚠️ Paradas 15+ dias<span class="ajuda ajuda-baixo" data-ajuda="Propostas ativas há 15 dias ou mais na mesma etapa. O detalhamento aparece na seção 'Propostas Mais Paradas' abaixo.">?</span></div><div class="dash-value" style="color:${d.paradas.length>0?'#dc2626':'#16a34a'}">${d.paradas.length}</div><div class="dash-sub">precisam de atenção</div></div>
+      <div class="dash-card accent-parada"><div class="dash-label">⚠️ Paradas 30+ dias<span class="ajuda ajuda-baixo" data-ajuda="Propostas ativas há 30 dias ou mais na mesma etapa. O detalhamento aparece na seção 'Propostas Mais Paradas' abaixo.">?</span></div><div class="dash-value" style="color:${d.paradas.length>0?'#dc2626':'#16a34a'}">${d.paradas.length}</div><div class="dash-sub">precisam de atenção</div></div>
       <div class="dash-card accent-cinza"><div class="dash-label">Média de Dias Parados<span class="ajuda ajuda-baixo ajuda-esq" data-ajuda="Média de dias que as propostas ativas estão paradas na etapa. Quanto menor, mais ágil o andamento.">?</span></div><div class="dash-value">${d.mediaDias}<span style="font-size:14px;font-weight:600;color:#9ca3af"> dias</span></div><div class="dash-sub">média das ativas</div></div>
     </div>`
 
@@ -3317,7 +3341,7 @@ function exportarPainelExcel() {
     { Indicador: 'Em tratativa (ativas)', Valor: d.ativas.length },
     { Indicador: 'Concedidas', Valor: d.concedidas.length },
     { Indicador: 'Recusadas + Excluídas', Valor: d.naoConcedidas.length },
-    { Indicador: 'Paradas 15+ dias', Valor: d.paradas.length },
+    { Indicador: 'Paradas 30+ dias', Valor: d.paradas.length },
     { Indicador: 'Média de dias parados', Valor: d.mediaDias },
     { Indicador: 'Valor total', Valor: d.valorTotal },
     { Indicador: 'Valor em tratativa', Valor: d.valorAtivo },
@@ -3350,7 +3374,7 @@ function exportarPainelExcel() {
       'Total de Propostas': v.total,
       'Em Tratativa': v.ativas,
       'Concedidas': v.concedidas,
-      'Paradas 15+ dias': v.paradas,
+      'Paradas 30+ dias': v.paradas,
       'Valor em Tratativa (R$)': v.valorAtivo,
       'Valor Total (R$)': v.valorTotal,
     }))
