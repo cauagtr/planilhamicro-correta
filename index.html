@@ -1470,6 +1470,15 @@ const COLUNAS_PROIBIDAS = [
 // No FomentoNet, cerca de um terço das razões sociais de MEI vem no
 // formato "18.399.134 MIKAEL LINCOLN MOURA MUNIZ" — o CNPJ na frente.
 // Outras trazem o CPF no fim: "DAVID STONOGA 53604806968".
+// Só propostas da Agência de Fomento pertencem a este sistema.
+// Se foi transferida para uma prefeitura, deixa de ser nossa.
+function ehAgenciaFomento(agencia) {
+  const a = (agencia || '').toString().toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()
+  if (!a) return true                      // sem informação: mantém
+  return a.includes('AGENCIA DE FOMENTO')
+}
+
 function limparRazaoSocial(txt) {
   let t = String(txt ?? '').trim()
   if (!t) return ''
@@ -1595,10 +1604,13 @@ function transformar(rows) {
     codigo: String(getCol(row,'Código da Operação','Codigo da Operação','Codigo da Operacao','Código da Operacao')).trim(),
     etapa: getCol(row,'Etapa'),
     valor: getCol(row,'Valor Solicitado','Valor'),
-    naEtapaDe: parseData(getCol(row,'Na Etapa Desde','Na Etapa De')),
+    // Coluna L da planilha: data da última movimentação de etapa.
+    // Nunca cai na Data de Cadastro — se faltar, fica em branco mesmo.
+    naEtapaDe: parseData(getCol(row,'Na Etapa Desde','Na Etapa De','Na etapa desde')),
     dataCadastro: parseData(getCol(row,'Data de Cadastro','Data Cadastro','Data de cadastro')),
     linhaCredito: normalizarLinhaCredito(getCol(row,'Linha de Crédito','Linha de Credito','Linha do Crédito','Linha')),
     razaoSocial: limparRazaoSocial(getCol(row,'Nome do Cliente','Razão Social','Razao Social','Nome')),
+    agencia: String(getCol(row,'Agência','Agencia') || '').trim(),
   }))
 }
 
@@ -1676,10 +1688,17 @@ async function processarPlanilhas() {
     let fin = transformar(rowsFin)
 
     fin = filtrarFinalizados(fin)
-    const merged = deduplicar([...and, ...fin])
+    let merged = deduplicar([...and, ...fin])
+
+    // Propostas transferidas para outra agência (prefeituras) deixam de ser
+    // nossas e não entram no sistema.
+    const antesAgencia = merged.length
+    const foraDaAgencia = merged.filter(r => !ehAgenciaFomento(r.agencia))
+    merged = merged.filter(r => ehAgenciaFomento(r.agencia))
+    const removidasAgencia = antesAgencia - merged.length
 
     // Buscar atribuições manuais já salvas no banco para preservá-las
-    const propostasExistentes = await sbAll('propostas?select=codigo,etapa,finalizada,responsavel,responsavel_final,observacao,observacoes_anteriores')
+    const propostasExistentes = await sbAll('propostas?select=codigo,etapa,finalizada,responsavel,responsavel_final,observacao,observacoes_anteriores,razao_social,data_cadastro')
     // Propostas que estão ATIVAS no sistema mas não vieram na planilha de
     // Andamento: quase sempre significa que foram concedidas, recusadas ou
     // excluídas. Sem a planilha de Finalizados, elas ficariam travadas.
@@ -1704,7 +1723,42 @@ async function processarPlanilhas() {
       })
     }
 
-    const comVlookup = aplicarVlookup(merged, referencia, mapaAtribuicoes)
+    let comVlookup = aplicarVlookup(merged, referencia, mapaAtribuicoes)
+
+    // ── Dono da proposta = quem INICIOU, não quem movimentou por último ──
+    // Quando o mesmo cliente tem várias propostas, o responsável correto é
+    // o da proposta mais antiga. Só preenche quem está sem responsável —
+    // nunca sobrescreve uma atribuição feita à mão.
+    let herdaram = 0
+    {
+      // Monta o "primeiro dono" de cada cliente, olhando o banco e a planilha
+      const donoPorCliente = {}
+      const registrar = (razao, resp, dataCad, codigo) => {
+        const cli = (razao || '').trim().toUpperCase()
+        if (!cli || !resp || resp === 'N/A') return
+        const chave = dataCad || '9999-12-31'
+        const atual = donoPorCliente[cli]
+        // Vence a proposta com cadastro mais antigo; empate, menor código
+        if (!atual || chave < atual.data || (chave === atual.data && String(codigo) < String(atual.codigo))) {
+          donoPorCliente[cli] = { resp, data: chave, codigo }
+        }
+      }
+      ;(propostasExistentes || []).forEach(p =>
+        registrar(p.razao_social, p.responsavel_final || p.responsavel, p.data_cadastro, p.codigo))
+      comVlookup.forEach(r => {
+        const d = r.dataCadastro && !isNaN(r.dataCadastro.getTime()) ? r.dataCadastro.toISOString().split('T')[0] : null
+        registrar(r.razaoSocial, r.responsavelFinal, d, r.codigo)
+      })
+
+      comVlookup = comVlookup.map(r => {
+        if (r.responsavel && r.responsavel !== 'N/A') return r
+        const cli = (r.razaoSocial || '').trim().toUpperCase()
+        const dono = cli ? donoPorCliente[cli] : null
+        if (!dono) return r
+        herdaram++
+        return { ...r, responsavel: dono.resp, responsavelFinal: dono.resp }
+      })
+    }
 
     const propostas = comVlookup.map(r => ({
       responsavel: r.responsavel || 'N/A',
@@ -1713,6 +1767,7 @@ async function processarPlanilhas() {
       valor: parseValor(r.valor),
       linha_credito: r.linhaCredito || '',
       razao_social: r.razaoSocial || '',
+      agencia: r.agencia || '',
       na_etapa_desde: (() => {
         try { return r.naEtapaDe && !isNaN(r.naEtapaDe.getTime()) ? r.naEtapaDe.toISOString().split('T')[0] : null }
         catch(e) { return null }
@@ -1725,6 +1780,15 @@ async function processarPlanilhas() {
       observacao: r.observacaoAtual || '',
       responsavel_final: r.responsavelFinal || 'N/A',
     }))
+
+    // Tira do banco as que foram transferidas para outra agência
+    if (foraDaAgencia.length) {
+      setProgresso(50, `Removendo ${foraDaAgencia.length} transferidas para outra agência...`)
+      for (const r of foraDaAgencia) {
+        try { await sb(`propostas?codigo=eq.${encodeURIComponent(r.codigo)}`, { method: 'DELETE', prefer: 'return=minimal' }) }
+        catch(e) { /* segue */ }
+      }
+    }
 
     setProgresso(55, `Salvando ${propostas.length} propostas...`)
     let salvas = 0
@@ -1774,6 +1838,8 @@ async function processarPlanilhas() {
         <div class="stat-card"><div class="stat-label">Propostas Antigas</div><div class="stat-value" style="color:${naAtrib>0?'#92400e':'#166534'}">${naAtrib}</div></div>
         <div class="stat-card"><div class="stat-label">Andamento</div><div class="stat-value">${and.length}</div></div>
         <div class="stat-card"><div class="stat-label">Finalizados</div><div class="stat-value">${fin.length}</div></div>
+        ${herdaram ? `<div class="stat-card"><div class="stat-label">👤 Herdaram responsável</div><div class="stat-value" style="color:#166534">${herdaram}</div><div class="stat-sub">de quem iniciou com o cliente</div></div>` : ''}
+        ${removidasAgencia ? `<div class="stat-card"><div class="stat-label">🏛️ Outra agência</div><div class="stat-value" style="color:#64748b">${removidasAgencia}</div><div class="stat-sub">transferidas, removidas</div></div>` : ''}
         ${sumiramDoAndamento.length ? `<div class="stat-card" style="background:#FFF7ED;border-color:#FDBA74"><div class="stat-label">⚠️ Saíram do andamento</div><div class="stat-value" style="color:#EA580C">${sumiramDoAndamento.length}</div><div class="stat-sub">precisam de conferência</div></div>` : ''}
       </div>
       ${sumiramDoAndamento.length ? `
