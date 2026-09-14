@@ -1002,6 +1002,8 @@ function diasParados(v) {
 }
 
 const DIAS_LIMITE_PARADA = 30
+// Início da safra considerada no funil do painel
+const INICIO_SAFRA = '2026-01-01'
 
 // Renderiza a célula de data com alerta se estiver parada há muito tempo (só para ativas)
 // Data curta da observação, no formato "26/08 - "
@@ -3023,12 +3025,19 @@ async function carregarPainel() {
   el.innerHTML = `<div class="card"><div class="empty"><div class="empty-icon">⏳</div><p>Carregando ${oque}...</p></div></div>`
   try {
     const filtro = painelIncluiHistorico ? '' : '&finalizada=eq.false'
-    const [props, hist] = await Promise.all([
+    // O funil da safra precisa das concedidas/recusadas de 2026 para mostrar
+    // o desfecho. Mesmo no modo "Só ativas", buscamos essa fatia — é pequena
+    // e sem ela a bifurcação apareceria zerada.
+    const [props, hist, safraFin] = await Promise.all([
       sbAll(`propostas?select=*${filtro}`),
-      sb('historico_processamentos?select=*&order=criado_em.desc&limit=12')
+      sb('historico_processamentos?select=*&order=criado_em.desc&limit=12'),
+      painelIncluiHistorico
+        ? Promise.resolve([])
+        : sbAll(`propostas?select=*&finalizada=eq.true&data_cadastro=gte.${INICIO_SAFRA}`)
     ])
     dadosPainel.propostas = props || []
     dadosPainel.historico = hist || []
+    dadosPainel.safraFinalizadas = safraFin || []
     renderPainel()
   } catch(e) {
     el.innerHTML = `<div class="card"><div class="alert alert-danger">❌ Erro ao carregar painel: ${e.message}</div></div>`
@@ -3278,8 +3287,17 @@ function renderPainel() {
     </div>`
 
   // ══ FUNIL DA SAFRA 2026, com bifurcação no desfecho ══
-  const INICIO_SAFRA = '2026-01-01'
-  const safra = props.filter(p => {
+  // A safra junta o que está carregado com as finalizadas de 2026,
+  // para o desfecho do funil não aparecer zerado no modo "Só ativas".
+  const baseSafra = aplicarFiltrosPainel([
+    ...dadosPainel.propostas,
+    ...(dadosPainel.safraFinalizadas || [])
+  ])
+  const vistos = new Set()
+  const safra = baseSafra.filter(p => {
+    const cod = String(p.codigo)
+    if (vistos.has(cod)) return false          // evita contar duas vezes
+    vistos.add(cod)
     const dt = p.data_cadastro ? String(p.data_cadastro).split('T')[0] : ''
     return dt && dt >= INICIO_SAFRA
   })
@@ -3461,7 +3479,12 @@ function limparFiltrosPainel() {
 }
 
 function propostasPainelFiltradas() {
-  let props = [...dadosPainel.propostas]
+  return aplicarFiltrosPainel(dadosPainel.propostas)
+}
+
+// Aplica os filtros do painel a qualquer lista de propostas
+function aplicarFiltrosPainel(lista) {
+  let props = [...(lista || [])]
   if (painelFiltroColab) props = props.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === painelFiltroColab)
   if (painelFiltroEtapa) props = props.filter(p => (p.etapa||'').trim() === painelFiltroEtapa)
   if (painelFiltroLinha) props = props.filter(p => normalizarLinhaCredito(p.linha_credito) === painelFiltroLinha)
