@@ -220,6 +220,8 @@
   tbody tr.selecionada:hover { background: #e0e7ff !important; }
   .lote-bar { display: none; align-items: center; gap: 12px; background: var(--azul); color: #fff; padding: 10px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 3px 10px rgba(0,51,102,.25); animation: ddIn .15s ease; flex-wrap: wrap; }
   .lote-bar.ativo { display: flex; }
+  .btn-lote.perigo { background: #DC2626; border-color: #DC2626; color: #fff; }
+  .btn-lote.perigo:hover { background: #B91C1C; }
   .lote-count { font-size: 13px; font-weight: 700; }
   .lote-count small { font-weight: 400; opacity: .8; }
   .lote-acoes { display: flex; gap: 8px; margin-left: auto; align-items: center; flex-wrap: wrap; }
@@ -358,7 +360,7 @@
   .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
   /* GRID UPLOAD */
-  .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
   @media (max-width: 640px) { .upload-grid { grid-template-columns: 1fr; } header { padding: 0 12px; } .tab-btn { padding: 12px 14px; font-size: 12px; } }
 
   /* RESPONSAVEL COLOR */
@@ -551,6 +553,7 @@
   .obs-hist-data { font-size: 10.5px; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 2px; }
   .obs-hist-vazio { display: block; padding: 10px; font-size: 12px; color: #94a3b8; text-align: center; }
 
+  .selo-transf { display: inline-block; background: #EDE9FE; color: #6B21A8; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 4px; margin-right: 5px; border: 1px solid #DDD6FE; }
   .td-razao { font-size: 12px; font-weight: 500; color: #334155; max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ident-chip { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 600; color: #475569; background: #f1f5f9; padding: 3px 8px; border-radius: 5px; letter-spacing: .3px; white-space: nowrap; }
   .ident-chip.ident-num { color: #1E40AF; background: #EFF6FF; }
@@ -590,6 +593,8 @@
   .g-ponto-grupo:hover .g-ponto { r: 6.5; fill: #2563EB; }
   .g-valor { font-size: 10.5px; fill: #475569; text-anchor: middle; font-weight: 700; font-family: IBM Plex Sans, sans-serif; }
   .g-ponto-grupo { cursor: default; }
+
+  .selo-transf { font-size: 10px; margin-left: 5px; cursor: help; opacity: .8; }
 
   /* Bifurcação do funil */
   .funilv-parou { font-size: 9.5px; font-weight: 700; color: #94a3b8; background: #f1f5f9; padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
@@ -959,10 +964,10 @@ function formatCNPJ(v) {
 
 // Corrige valores que vieram divididos por 1000 de processamentos antigos.
 // Regra: se o valor for 81 ou menos (e maior que zero), multiplica por 1000.
-// Ex: 20 -> 20.000 ; 6 -> 6.000 ; 66,55 -> 66.550 ; 81 -> 81.000 ; 76352 fica como está.
+// Ex: 20 -> 20.000 ; 6 -> 6.000 ; 66,55 -> 66.550 ; 120 -> 120.000 ; 76352 fica como está.
 function corrigirValor(n) {
   if (n === null || n === undefined || isNaN(n)) return n
-  if (n > 0 && n <= 81) return n * 1000
+  if (n > 0 && n <= 120) return n * 1000
   return n
 }
 
@@ -1150,6 +1155,7 @@ function setTab(tab) {
 let arquivoAndamento = null
 let sumiramDoAndamento = []
 let arquivoFinalizados = null
+let arquivoTransferencias = null
 
 function renderProcessar() {
   document.getElementById('view-processar').innerHTML = `
@@ -1180,6 +1186,19 @@ function renderProcessar() {
           <div class="file-label-main">Clique ou arraste o arquivo</div>
           <div class="file-label-sub">.xlsx, .xls ou .csv</div>
           <div class="file-name" id="nome-finalizados"></div>
+        </div>
+      </div>
+      <div>
+        <label>Propostas em Transferência <span class="tag-opcional">opcional</span></label>
+        <div class="input-file-area" id="drop-transferencias" onclick="document.getElementById('file-transferencias').click()"
+          ondragover="event.preventDefault();this.classList.add('over')"
+          ondragleave="this.classList.remove('over')"
+          ondrop="handleDrop(event,'transferencias')">
+          <input type="file" id="file-transferencias" accept=".xlsx,.xls,.csv" onchange="handleFile(event,'transferencias')"/>
+          <div class="file-icon">🔄</div>
+          <div class="file-label-main">Clique ou arraste o arquivo</div>
+          <div class="file-label-sub">recebidas de outro agente · .xlsx, .xls ou .csv</div>
+          <div class="file-name" id="nome-transferencias"></div>
         </div>
       </div>
     </div>
@@ -1525,11 +1544,48 @@ const COLUNAS_PROIBIDAS = [
 // Outras trazem o CPF no fim: "DAVID STONOGA 53604806968".
 // Só propostas da Agência de Fomento pertencem a este sistema.
 // Se foi transferida para uma prefeitura, deixa de ser nossa.
+// A proposta veio por transferência de outro agente de crédito?
+// O FomentoNet marca isso na coluna Agência.
+function ehTransferencia(agencia) {
+  const a = (agencia || '').toString().toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  return a.includes('TRANSFER')
+}
+
+// De qual agente veio. O texto da coluna Motivo Recusa costuma ser
+// "Trasferência de Carteira - De: FULANO para: AGENTE FOMENTO TRANSFERÊNCIAS"
+function origemDaTransferencia(motivo) {
+  const t = (motivo || '').toString().trim()
+  if (!t) return ''
+  const m = t.match(/De:\s*(.+?)\s+para:/i)
+  if (m) return m[1].trim()
+  if (/transfer/i.test(t)) return t.substring(0, 80)
+  return ''   // "Matriz (Endividamento SCR)" e afins não são origem
+}
+
 function ehAgenciaFomento(agencia) {
   const a = (agencia || '').toString().toUpperCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()
   if (!a) return true                      // sem informação: mantém
   return a.includes('AGENCIA DE FOMENTO')
+}
+
+// Propostas que vieram de outro agente de crédito do Paraná.
+// A planilha marca isso na coluna Agência:
+//   "AGENCIA DE FOMENTO"                → nossa desde o início
+//   "AGENCIA DE FOMENTO TRANSFERÊNCIAS" → recebida por transferência
+function ehTransferencia(agencia) {
+  return (agencia || '').toString().toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .includes('TRANSFER')
+}
+
+// Tira o nome do agente de origem do texto do motivo da recusa.
+// Ex: "Trasferência de Carteira - De: VANUSA KLOSINSKI para: ..." → VANUSA KLOSINSKI
+function origemDaTransferencia(motivo) {
+  const m = (motivo || '').toString()
+  const achou = m.match(/carteira\s*-\s*de:\s*([^]*?)\s*para:/i)
+  return achou ? achou[1].trim() : ''
 }
 
 function limparRazaoSocial(txt) {
@@ -1568,6 +1624,7 @@ async function validarPlanilha(file) {
 
 async function processarArquivo(file, tipo) {
   if (tipo === 'andamento') arquivoAndamento = file
+  else if (tipo === 'transferencias') arquivoTransferencias = file
   else arquivoFinalizados = file
 
   const nome = document.getElementById(`nome-${tipo}`)
@@ -1664,6 +1721,8 @@ function transformar(rows) {
     linhaCredito: normalizarLinhaCredito(getCol(row,'Linha de Crédito','Linha de Credito','Linha do Crédito','Linha')),
     razaoSocial: limparRazaoSocial(getCol(row,'Nome do Cliente','Razão Social','Razao Social','Nome')),
     agencia: String(getCol(row,'Agência','Agencia') || '').trim(),
+    motivoRecusa: String(getCol(row,'Motivo Recusa','Motivo da Recusa') || '').trim(),
+    motivoRecusa: String(getCol(row,'Motivo Recusa','Motivo da Recusa') || '').trim(),
   }))
 }
 
@@ -1727,9 +1786,10 @@ async function processarPlanilhas() {
 
   try {
     setProgresso(10, 'Lendo planilhas...')
-    const [rowsAnd, rowsFin] = await Promise.all([
+    const [rowsAnd, rowsFin, rowsTransf] = await Promise.all([
       lerPlanilha(arquivoAndamento),
-      arquivoFinalizados ? lerPlanilha(arquivoFinalizados) : Promise.resolve([])
+      arquivoFinalizados ? lerPlanilha(arquivoFinalizados) : Promise.resolve([]),
+      arquivoTransferencias ? lerPlanilha(arquivoTransferencias) : Promise.resolve([])
     ])
 
     setProgresso(25, 'Buscando referência no Supabase...')
@@ -1739,9 +1799,12 @@ async function processarPlanilhas() {
     setProgresso(40, 'Processando dados...')
     let and = transformar(rowsAnd)
     let fin = transformar(rowsFin)
+    // Propostas recebidas de outro agente de crédito
+    let transf = transformar(rowsTransf)
+    const qtdTransf = transf.length
 
     fin = filtrarFinalizados(fin)
-    let merged = deduplicar([...and, ...fin])
+    let merged = deduplicar([...and, ...fin, ...transf])
 
     // Propostas transferidas para outra agência (prefeituras) deixam de ser
     // nossas e não entram no sistema.
@@ -1778,40 +1841,12 @@ async function processarPlanilhas() {
 
     let comVlookup = aplicarVlookup(merged, referencia, mapaAtribuicoes)
 
-    // ── Dono da proposta = quem INICIOU, não quem movimentou por último ──
-    // Quando o mesmo cliente tem várias propostas, o responsável correto é
-    // o da proposta mais antiga. Só preenche quem está sem responsável —
-    // nunca sobrescreve uma atribuição feita à mão.
-    let herdaram = 0
-    {
-      // Monta o "primeiro dono" de cada cliente, olhando o banco e a planilha
-      const donoPorCliente = {}
-      const registrar = (razao, resp, dataCad, codigo) => {
-        const cli = (razao || '').trim().toUpperCase()
-        if (!cli || !resp || resp === 'N/A') return
-        const chave = dataCad || '9999-12-31'
-        const atual = donoPorCliente[cli]
-        // Vence a proposta com cadastro mais antigo; empate, menor código
-        if (!atual || chave < atual.data || (chave === atual.data && String(codigo) < String(atual.codigo))) {
-          donoPorCliente[cli] = { resp, data: chave, codigo }
-        }
-      }
-      ;(propostasExistentes || []).forEach(p =>
-        registrar(p.razao_social, p.responsavel_final || p.responsavel, p.data_cadastro, p.codigo))
-      comVlookup.forEach(r => {
-        const d = r.dataCadastro && !isNaN(r.dataCadastro.getTime()) ? r.dataCadastro.toISOString().split('T')[0] : null
-        registrar(r.razaoSocial, r.responsavelFinal, d, r.codigo)
-      })
-
-      comVlookup = comVlookup.map(r => {
-        if (r.responsavel && r.responsavel !== 'N/A') return r
-        const cli = (r.razaoSocial || '').trim().toUpperCase()
-        const dono = cli ? donoPorCliente[cli] : null
-        if (!dono) return r
-        herdaram++
-        return { ...r, responsavel: dono.resp, responsavelFinal: dono.resp }
-      })
-    }
+    // NOTA: cada proposta mantém o responsável dela própria (de quem a
+    // iniciou), preservado pelo vlookup a partir do que está no banco.
+    // NÃO propagamos o responsável entre propostas do mesmo cliente:
+    // isso fazia propostas antigas "herdarem" o dono da mais recente,
+    // quando na verdade deviam permanecer sem responsável.
+    const herdaram = 0
 
     const propostas = comVlookup.map(r => ({
       responsavel: r.responsavel || 'N/A',
@@ -1821,6 +1856,10 @@ async function processarPlanilhas() {
       linha_credito: r.linhaCredito || '',
       razao_social: r.razaoSocial || '',
       agencia: r.agencia || '',
+      transferencia: ehTransferencia(r.agencia),
+      origem_transferencia: origemDaTransferencia(r.motivoRecusa),
+      transferencia: ehTransferencia(r.agencia),
+      origem_transferencia: ehTransferencia(r.agencia) ? origemDaTransferencia(r.motivoRecusa) : '',
       na_etapa_desde: (() => {
         try { return r.naEtapaDe && !isNaN(r.naEtapaDe.getTime()) ? r.naEtapaDe.toISOString().split('T')[0] : null }
         catch(e) { return null }
@@ -1860,7 +1899,7 @@ async function processarPlanilhas() {
       method: 'POST',
       prefer: 'return=minimal',
       body: {
-        arquivos_enviados: [arquivoAndamento.name, arquivoFinalizados ? arquivoFinalizados.name : null].filter(Boolean),
+        arquivos_enviados: [arquivoAndamento.name, arquivoFinalizados ? arquivoFinalizados.name : null, arquivoTransferencias ? arquivoTransferencias.name : null].filter(Boolean),
         total_propostas: propostas.length
       }
     })
@@ -1891,6 +1930,7 @@ async function processarPlanilhas() {
         <div class="stat-card"><div class="stat-label">Propostas Antigas</div><div class="stat-value" style="color:${naAtrib>0?'#92400e':'#166534'}">${naAtrib}</div></div>
         <div class="stat-card"><div class="stat-label">Andamento</div><div class="stat-value">${and.length}</div></div>
         <div class="stat-card"><div class="stat-label">Finalizados</div><div class="stat-value">${fin.length}</div></div>
+        ${qtdTransf ? `<div class="stat-card"><div class="stat-label">🔄 Transferências</div><div class="stat-value" style="color:#7C3AED">${qtdTransf}</div><div class="stat-sub">recebidas de outro agente</div></div>` : ''}
         ${herdaram ? `<div class="stat-card"><div class="stat-label">👤 Herdaram responsável</div><div class="stat-value" style="color:#166534">${herdaram}</div><div class="stat-sub">de quem iniciou com o cliente</div></div>` : ''}
         ${removidasAgencia ? `<div class="stat-card"><div class="stat-label">🏛️ Outra agência</div><div class="stat-value" style="color:#64748b">${removidasAgencia}</div><div class="stat-sub">transferidas, removidas</div></div>` : ''}
         ${sumiramDoAndamento.length ? `<div class="stat-card" style="background:#FFF7ED;border-color:#FDBA74"><div class="stat-label">⚠️ Saíram do andamento</div><div class="stat-value" style="color:#EA580C">${sumiramDoAndamento.length}</div><div class="stat-sub">precisam de conferência</div></div>` : ''}
@@ -1928,6 +1968,7 @@ let mostrarFinalizadas = false
 // Data/hora do último processamento de planilha, mostrada na aba Propostas
 let ultimaAtualizacao = null  // por padrão, esconde as finalizadas do fluxo do dia a dia
 let filtroEtapa = ''
+let filtroTransferencia = ''
 let filtroLinhaCredito = ''
 let filtroSearch = ''
 let filtroDataIni = ''
@@ -2000,6 +2041,22 @@ function renderPropostas() {
           </select>
         </div>
         <div class="fa-campo">
+          <label>🔄 Origem</label>
+          <select class="fa-input" id="fa-transf" onchange="aplicarFiltrosAvancados()">
+            <option value="">Todas</option>
+            <option value="sim" ${filtroTransferencia==='sim'?'selected':''}>Só as recebidas por transferência</option>
+            <option value="nao" ${filtroTransferencia==='nao'?'selected':''}>Só as nossas (sem transferência)</option>
+          </select>
+        </div>
+        <div class="fa-campo">
+          <label>⇄ Origem da Proposta</label>
+          <select class="fa-input" id="fa-transf" onchange="aplicarFiltrosAvancados()">
+            <option value="">Todas</option>
+            <option value="sim" ${filtroTransferencia==='sim'?'selected':''}>Só as recebidas por transferência</option>
+            <option value="nao" ${filtroTransferencia==='nao'?'selected':''}>Só as nossas desde o início</option>
+          </select>
+        </div>
+        <div class="fa-campo">
           <label>🏷️ Linha de Crédito</label>
           <select class="fa-input" id="fa-linha" onchange="aplicarFiltrosAvancados()">
             <option value="">Todas as linhas</option>
@@ -2067,9 +2124,13 @@ function aplicarFiltrosData(rows) {
   if (filtroEtapa) {
     rows = rows.filter(p => (p.etapa||'').trim() === filtroEtapa)
   }
+  if (filtroTransferencia === 'sim') rows = rows.filter(p => p.transferencia === true)
+  if (filtroTransferencia === 'nao') rows = rows.filter(p => p.transferencia !== true)
   if (filtroLinhaCredito) {
     rows = rows.filter(p => normalizarLinhaCredito(p.linha_credito) === filtroLinhaCredito)
   }
+  if (filtroTransferencia === 'sim') rows = rows.filter(p => !!p.transferencia)
+  if (filtroTransferencia === 'nao') rows = rows.filter(p => !p.transferencia)
   return rows
 }
 
@@ -2176,7 +2237,9 @@ function contarFiltrosAtivos() {
   if (filtroValorMin !== '') n++
   if (filtroValorMax !== '') n++
   if (filtroEtapa) n++
+  if (filtroTransferencia) n++
   if (filtroLinhaCredito) n++
+  if (filtroTransferencia) n++
   return n
 }
 
@@ -2223,7 +2286,9 @@ function aplicarFiltrosAvancados() {
   filtroValorMin = document.getElementById('fa-valor-min')?.value || ''
   filtroValorMax = document.getElementById('fa-valor-max')?.value || ''
   filtroEtapa = document.getElementById('fa-etapa')?.value || ''
+  filtroTransferencia = document.getElementById('fa-transf')?.value || ''
   filtroLinhaCredito = document.getElementById('fa-linha')?.value || ''
+  filtroTransferencia = document.getElementById('fa-transf')?.value || ''
   renderTabelaPropostas()
   renderStatsPropostas()
   atualizarBadgeFiltros()
@@ -2232,8 +2297,8 @@ function aplicarFiltrosAvancados() {
 function limparFiltrosAvancados() {
   pagAtual = 1
   filtroDataIni = ''; filtroDataFim = ''; filtroValorMin = ''; filtroValorMax = ''
-  filtroEtapa = ''; filtroLinhaCredito = ''
-  const ids = ['fa-data-ini','fa-data-fim','fa-valor-min','fa-valor-max','fa-etapa','fa-linha']
+  filtroEtapa = ''; filtroLinhaCredito = ''; filtroTransferencia = ''
+  const ids = ['fa-data-ini','fa-data-fim','fa-valor-min','fa-valor-max','fa-etapa','fa-linha','fa-transf']
   ids.forEach(id => { const e = document.getElementById(id); if (e) e.value = '' })
   renderTabelaPropostas()
   renderStatsPropostas()
@@ -2455,10 +2520,12 @@ function renderTabelaPropostas() {
     return `<tr${trClass} data-codigo="${p.codigo}">
       <td class="check-col"><input type="checkbox" class="row-check" ${estaSel?'checked':''} onclick="toggleSelecionada('${p.codigo}', this.checked)"/></td>
       ${respCell}
-      <td class="td-cnpj" style="font-weight:700">${p.codigo||'—'}</td>
-      <td class="td-razao" title="${(p.razao_social||'').replace(/"/g,'&quot;')}">${p.razao_social || '<span style="color:#cbd5e1">—</span>'}</td>
+      <td class="td-cnpj" style="font-weight:700">${p.codigo||'—'}${p.transferencia ? `<span class="selo-transf" title="Recebida por transferência${p.origem_transferencia ? ' de ' + p.origem_transferencia : ''}">🔄</span>` : ''}</td>
+      <td class="td-razao" title="${((p.razao_social||'') + (p.transferencia ? ' · transferida de ' + (p.origem_transferencia || 'outro agente') : '')).replace(/"/g,'&quot;')}">
+        ${p.transferencia ? '<span class="selo-transf" title="Recebida por transferência de outro agente de crédito">⇄</span>' : ''}${p.razao_social || '<span style="color:#cbd5e1">—</span>'}
+      </td>
       <td>${linhaBadge(p.linha_credito)}</td>
-      <td class="td-etapa">${etapaBadge(p.etapa)}</td>
+      <td class="td-etapa" onclick="abrirModalEtapaProposta('${p.codigo}')" title="Clique para mudar a etapa" style="cursor:pointer">${etapaBadge(p.etapa)}</td>
       <td class="td-valor">${formatValor(p.valor)}</td>
       ${celulaData(p)}
       ${obsCell}
@@ -2679,6 +2746,51 @@ async function atribuirResponsavel(codigo, resp, selectEl) {
 // ============================================================
 // MODAL OBSERVAÇÃO
 // ============================================================
+// ── Mudar a etapa de uma proposta pela tela ──
+let mudarEtapaCodigo = null
+
+function abrirModalEtapaProposta(codigo) {
+  mudarEtapaCodigo = String(codigo)
+  const p = todasPropostas.find(x => String(x.codigo) === mudarEtapaCodigo)
+  if (!p) return
+  document.getElementById('me-info').textContent = `${p.codigo} · ${p.razao_social || 'sem razão social'}`
+  const opcoes = [...FUNIL_ETAPAS, 'Concedido', 'Recusado', 'Excluído']
+  const atual = normalizarNomeEtapa(p.etapa) || p.etapa || ''
+  document.getElementById('me-select').innerHTML = opcoes.map(e =>
+    `<option value="${e}" ${e === atual ? 'selected' : ''}>${e}</option>`).join('')
+  document.getElementById('modal-mudar-etapa').style.display = 'flex'
+}
+
+function fecharModalEtapaProposta(e) {
+  if (e && e.target !== document.getElementById('modal-mudar-etapa')) return
+  document.getElementById('modal-mudar-etapa').style.display = 'none'
+  mudarEtapaCodigo = null
+}
+
+async function salvarEtapaProposta() {
+  if (!mudarEtapaCodigo) return
+  const nova = document.getElementById('me-select').value
+  const btn = document.getElementById('me-salvar')
+  btn.disabled = true; btn.textContent = 'Salvando...'
+  try {
+    await sb(`propostas?codigo=eq.${encodeURIComponent(mudarEtapaCodigo)}`, {
+      method: 'PATCH', prefer: 'return=minimal', body: { etapa: nova }
+    })
+    const i = todasPropostas.findIndex(p => String(p.codigo) === mudarEtapaCodigo)
+    if (i !== -1) {
+      todasPropostas[i].etapa = nova
+      todasPropostas[i].finalizada = ehFinalizada(nova)
+    }
+    showToast(`✓ Etapa alterada para ${nova}`)
+    fecharModalEtapaProposta()
+    renderTabelaPropostas(); renderStatsPropostas()
+  } catch(e) {
+    showToast('Erro ao mudar a etapa: ' + e.message, 'error')
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar'
+  }
+}
+
 function abrirModal(codigo, obs, obsAntiga) {
   modalCodigo = codigo
   document.getElementById('modal-title').textContent = 'Observação'
@@ -2802,16 +2914,48 @@ function renderBarraLote() {
       <div class="lote-acoes">
         ${n < totalFiltrado ? `<button class="btn-lote" onclick="selecionarTodosFiltrados()">Selecionar todas as ${totalFiltrado}</button>` : ''}
         <button class="btn-lote primario" onclick="abrirModalRespLote()">👤 Reatribuir para...</button>
+        <button class="btn-lote" onclick="reatribuirLote('N/A')">🚫 Enviar para N/A</button>
+        <button class="btn-lote perigo" onclick="excluirLote()">🗑️ Excluir do sistema</button>
         <button class="btn-lote" onclick="limparSelecao()">✕ Limpar</button>
       </div>
     </div>`
+}
+
+// Remove as propostas selecionadas do sistema.
+// Guarda uma cópia numa tabela de backup, para dar para desfazer.
+async function excluirLote() {
+  const codigos = [...selecionadas]
+  if (!codigos.length) return
+  if (!confirm(`Excluir ${codigos.length} proposta${codigos.length!==1?'s':''} do sistema?\n\nUma cópia fica guardada no banco (backup_excluidas), então dá para restaurar depois se precisar.`)) return
+
+  const cont = document.getElementById('lote-bar-container')
+  if (cont) cont.innerHTML = `<div class="lote-bar ativo"><span class="lote-count"><span class="spinner"></span> Excluindo 0/${codigos.length}...</span></div>`
+
+  let ok = 0, erros = 0
+  for (const codigo of codigos) {
+    try {
+      // 1. Guarda a proposta no backup antes de apagar
+      const atual = todasPropostas.find(p => String(p.codigo) === String(codigo))
+      if (atual) {
+        try { await sb('backup_excluidas', { method: 'POST', prefer: 'return=minimal', body: { codigo: String(codigo), dados: atual } }) } catch(e) {}
+      }
+      // 2. Apaga do banco
+      await sb(`propostas?codigo=eq.${encodeURIComponent(codigo)}`, { method: 'DELETE', prefer: 'return=minimal' })
+      todasPropostas = todasPropostas.filter(p => String(p.codigo) !== String(codigo))
+      ok++
+      if (cont && ok % 3 === 0) cont.innerHTML = `<div class="lote-bar ativo"><span class="lote-count"><span class="spinner"></span> Excluindo ${ok}/${codigos.length}...</span></div>`
+    } catch(e) { erros++ }
+  }
+  selecionadas.clear()
+  showToast(`✓ ${ok} proposta${ok!==1?'s':''} excluída${ok!==1?'s':''}${erros?` · ${erros} com erro`:''}`)
+  renderTabelaPropostas(); renderStatsPropostas()
 }
 
 async function reatribuirLote(novoResp) {
   const codigos = [...selecionadas]
   if (!codigos.length) return
 
-  if (!confirm(`Reatribuir ${codigos.length} proposta${codigos.length!==1?'s':''} para ${novoResp}?`)) return
+  const acao = novoResp === "N/A" ? `Remover o respons√°vel de ${codigos.length} proposta${codigos.length!==1?"s":""}?` : `Reatribuir ${codigos.length} proposta${codigos.length!==1?"s":""} para ${novoResp}?`; if (!confirm(acao)) return
 
   const cont = document.getElementById('lote-bar-container')
   if (cont) cont.innerHTML = `<div class="lote-bar ativo"><span class="lote-count"><span class="spinner"></span> Reatribuindo 0/${codigos.length}...</span></div>`
@@ -2891,6 +3035,8 @@ function exportarExcel() {
       'Responsável': p.responsavel || 'N/A',
       'Código da Operação': p.codigo || '',
       'Razão Social': p.razao_social || '',
+      'Transferência': p.transferencia ? 'Sim' : 'Não',
+      'Origem da Transferência': p.origem_transferencia || '',
       'Linha de Crédito': p.linha_credito || '',
       'Etapa': p.etapa || '',
       'Valor (R$)': valorNum(p),
@@ -3818,6 +3964,8 @@ async function carregarHistorico() {
 // Fecha modais com a tecla Esc
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return
+  const mMe = document.getElementById('modal-mudar-etapa')
+  if (mMe && mMe.style.display === 'flex') { fecharModalEtapaProposta(); return }
   const mEt = document.getElementById('modal-etapa')
   if (mEt && mEt.style.display === 'flex') { fecharModalEtapa(); return }
   const mResp = document.getElementById('modal-resp')
@@ -3838,6 +3986,24 @@ renderHistorico()
     <div id="modal-etapa-lista" class="lista-etapa-wrap"></div>
     <div class="modal-acoes">
       <button class="btn btn-secondary" onclick="fecharModalEtapa()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MUDAR A ETAPA DA PROPOSTA -->
+<div class="modal-overlay" id="modal-mudar-etapa" style="display:none" onclick="fecharModalEtapaProposta(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">Mudar etapa da proposta</div>
+    <div class="modal-info" id="me-info"></div>
+    <div class="alert alert-info" style="margin-bottom:14px;font-size:12px">
+      Útil para propostas que saíram do andamento e não vieram na planilha de finalizados —
+      como as recebidas por transferência.
+    </div>
+    <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px">Nova etapa</label>
+    <select class="fa-input" id="me-select" style="margin-bottom:14px"></select>
+    <div class="modal-acoes">
+      <button class="btn btn-secondary" onclick="fecharModalEtapaProposta()">Cancelar</button>
+      <button class="btn btn-primary" id="me-salvar" onclick="salvarEtapaProposta()">Salvar</button>
     </div>
   </div>
 </div>
