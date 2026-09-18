@@ -1666,10 +1666,23 @@ function achouColuna(cabecalhos, nomes) {
   return nomes.some(n => cabecalhos.some(c => c.trim().toLowerCase() === n.toLowerCase()))
 }
 
-async function validarPlanilha(file) {
+// tipo: 'andamento' e obrigatoria e nao pode vir vazia.
+// 'transferencias' e 'finalizados' podem vir zeradas — na maioria dos dias
+// a de transferencias vem sem nenhuma linha, e isso e normal.
+async function validarPlanilha(file, tipo) {
+  const opcional = tipo === 'transferencias' || tipo === 'finalizados'
+  let rows
   try {
-    const rows = await lerPlanilha(file)
-    if (!rows.length) return { ok: false, erro: 'A planilha está vazia (nenhuma linha de dados).' }
+    rows = await lerPlanilha(file)
+  } catch(e) {
+    if (opcional) return { ok: true, vazia: true, linhas: 0, colunas: 0, faltando: [], proibidas: [], encontradas: [] }
+    return { ok: false, erro: 'Não foi possível ler o arquivo: ' + e.message }
+  }
+  try {
+    if (!rows.length) {
+      if (opcional) return { ok: true, vazia: true, linhas: 0, colunas: 0, faltando: [], proibidas: [], encontradas: [] }
+      return { ok: false, erro: 'A planilha está vazia (nenhuma linha de dados).' }
+    }
 
     const cabecalhos = Object.keys(rows[0])
     const faltando = COLUNAS_NECESSARIAS.filter(c => !achouColuna(cabecalhos, c.nomes)).map(c => c.label)
@@ -1708,7 +1721,14 @@ async function processarArquivo(file, tipo) {
   prev.className = 'file-preview'
   prev.innerHTML = `<div class="fp-linha"><span class="fp-icone">⏳</span> Lendo arquivo...</div>`
 
-  const v = await validarPlanilha(file)
+  const v = await validarPlanilha(file, tipo)
+
+  if (v.ok && v.vazia) {
+    prev.className = 'file-preview'
+    prev.innerHTML = `<div class="fp-linha"><span class="fp-icone">📭</span> Planilha vazia — <b>nenhuma linha</b>. Tudo bem: o processamento segue normalmente, sem nada a atualizar por este arquivo.</div>`
+    atualizarBotaoProcessar()
+    return
+  }
 
   if (!v.ok) {
     prev.className = 'file-preview erro'
@@ -1853,8 +1873,9 @@ async function processarPlanilhas() {
     setProgresso(10, 'Lendo planilhas...')
     const [rowsAnd, rowsFin, rowsTransf] = await Promise.all([
       lerPlanilha(arquivoAndamento),
-      arquivoFinalizados ? lerPlanilha(arquivoFinalizados) : Promise.resolve([]),
-      arquivoTransferencias ? lerPlanilha(arquivoTransferencias) : Promise.resolve([])
+      // Planilha opcional vazia nao derruba o processamento: entra como lista vazia.
+      arquivoFinalizados ? lerPlanilha(arquivoFinalizados).catch(() => []) : Promise.resolve([]),
+      arquivoTransferencias ? lerPlanilha(arquivoTransferencias).catch(() => []) : Promise.resolve([])
     ])
 
     setProgresso(25, 'Buscando referência no Supabase...')
