@@ -1267,6 +1267,7 @@ function renderProcessar() {
 // ══════════════════════════════════════════════════════════
 let arquivosHist = []
 let modoSoRazao = false
+let modoSoResp = false
 let linhasHist = []
 
 function handleDropHist(e) {
@@ -1285,6 +1286,7 @@ async function processarArquivosHist(files) {
   arquivosHist = files
   linhasHist = []
   modoSoRazao = false
+  modoSoResp = false
   const prev = document.getElementById('preview-hist')
   const status = document.getElementById('status-hist')
   const btn = document.getElementById('btn-import-hist')
@@ -1309,6 +1311,24 @@ async function processarArquivosHist(files) {
       const temCodigo = achouColuna(cabecalhos, COLUNAS_NECESSARIAS[0].nomes)
       const temEtapa  = achouColuna(cabecalhos, ['Etapa'])
       const temNome   = achouColuna(cabecalhos, ['Nome do Cliente','Razão Social','Razao Social','Nome'])
+      const temResp   = achouColuna(cabecalhos, ['Responsável','Responsavel','Colaborador'])
+
+      // Planilha só com Código + Responsável: preenche o responsavel
+      // SOMENTE das propostas que estao em N/A. Por codigo, uma a uma,
+      // sem olhar razao social e sem propagar para outras propostas.
+      if (temCodigo && temResp && !temEtapa) {
+        modoSoResp = true
+        const soResp = rows.map(r => ({
+          codigo: String(getCol(r,'Código da Operação','Codigo da Operação','Codigo da Operacao','Código da Operacao')).trim(),
+          responsavel: String(getCol(r,'Responsável','Responsavel','Colaborador') || '').trim().toUpperCase(),
+        })).filter(r => r.codigo && r.responsavel && r.responsavel !== 'N/A')
+        const desconhecidos = [...new Set(soResp.filter(r => !COLAB_LIST.includes(r.responsavel)).map(r => r.responsavel))]
+        if (desconhecidos.length) erros.push(`${f.name}: nomes fora da lista de colaboradores — ${desconhecidos.join(', ')}`)
+        porArquivo.push({ nome: f.name, qtd: soResp.length })
+        linhasHist = linhasHist.concat(soResp.filter(r => COLAB_LIST.includes(r.responsavel)))
+        continue
+      }
+
       if (temCodigo && temNome && !temEtapa) {
         modoSoRazao = true
         const soNomes = rows.map(r => ({
@@ -1343,6 +1363,22 @@ async function processarArquivosHist(files) {
   linhasHist.forEach(r => { mapaCod[String(r.codigo).trim()] = r })
   const duplicados = linhasHist.length - Object.keys(mapaCod).length
   linhasHist = Object.values(mapaCod)
+
+  if (modoSoResp) {
+    const porColab = {}
+    linhasHist.forEach(r => { porColab[r.responsavel] = (porColab[r.responsavel]||0)+1 })
+    prev.innerHTML = `<div class="preview-box">
+      <div class="preview-linha"><span class="ok">✅</span> <b>${linhasHist.length}</b> vínculos para aplicar</div>
+      ${erros.length ? `<div class="preview-linha"><span class="warn">⚠️</span> ${erros.join(' · ')}</div>` : ''}
+      <div class="preview-linha"><span class="ok">🔒</span> Só preenche quem está em N/A. Quem já tem responsável não é alterado, e nada é propagado para outras propostas do mesmo cliente.</div>
+      <div class="preview-cols">Por colaborador: ${Object.entries(porColab).sort((a,b)=>b[1]-a[1]).map(([c,n]) => `<b>${c}</b> (${n})`).join(' · ')}</div>
+    </div>`
+    status.className = 'alert alert-success'
+    status.innerHTML = `✅ Pronto para vincular <b>${linhasHist.length}</b> propostas.`
+    btn.disabled = false
+    btn.textContent = '👤 Vincular responsáveis'
+    return
+  }
 
   if (modoSoRazao) {
     prev.innerHTML = `<div class="preview-box">
@@ -1391,6 +1427,53 @@ async function importarHistorico() {
   document.getElementById('resultado-hist').innerHTML = ''
 
   try {
+    // ── Modo "só responsável": preenche apenas as que estao em N/A ──
+    if (modoSoResp) {
+      setProgHist(5, 'Verificando quem já tem responsável...')
+      const existentes = await sbAll('propostas?select=codigo,responsavel')
+      const mapaResp = {}
+      ;(existentes||[]).forEach(p => { mapaResp[String(p.codigo).trim()] = p.responsavel })
+
+      let vinculadas = 0, jaTinham = 0, naoEncontradas = 0
+      const alvos = []
+      linhasHist.forEach(r => {
+        const atual = mapaResp[String(r.codigo).trim()]
+        if (atual === undefined) { naoEncontradas++; return }
+        if (atual && atual !== 'N/A') { jaTinham++; return }
+        alvos.push(r)
+      })
+
+      const LOTE = 200
+      for (let i = 0; i < alvos.length; i += LOTE) {
+        const lote = alvos.slice(i, i + LOTE)
+        await Promise.all(lote.map(async r => {
+          try {
+            await sb(`propostas?codigo=eq.${encodeURIComponent(r.codigo)}&or=(responsavel.is.null,responsavel.eq.N/A)`, {
+              method: 'PATCH',
+              prefer: 'return=minimal',
+              body: { responsavel: r.responsavel, responsavel_final: r.responsavel,
+                      atribuido_em: new Date().toISOString(), atribuido_por: 'planilha' }
+            })
+            vinculadas++
+          } catch(e) { naoEncontradas++ }
+        }))
+        setProgHist(5 + Math.round(((i+lote.length)/Math.max(1,alvos.length))*90), `Vinculando ${Math.min(i+LOTE, alvos.length)} de ${alvos.length}...`)
+      }
+
+      setProgHist(100, 'Concluído!')
+      status.className = 'alert alert-success'
+      status.innerHTML = `✅ Vínculos aplicados.`
+      document.getElementById('resultado-hist').innerHTML = `
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Vinculadas</div><div class="stat-value" style="color:#166534">${vinculadas}</div></div>
+          <div class="stat-card"><div class="stat-label">Já tinham responsável</div><div class="stat-value">${jaTinham}</div><div class="stat-sub">não alteradas</div></div>
+          <div class="stat-card"><div class="stat-label">Não encontradas</div><div class="stat-value">${naoEncontradas}</div><div class="stat-sub">código não existe no sistema</div></div>
+        </div>`
+      btn.disabled = false
+      btn.textContent = '👤 Vincular responsáveis'
+      return
+    }
+
     // ── Modo "só razão social": atualiza apenas esse campo ──
     if (modoSoRazao) {
       setProgHist(5, 'Preparando a atualização...')
@@ -1704,7 +1787,6 @@ function transformar(rows) {
     linhaCredito: normalizarLinhaCredito(getCol(row,'Linha de Crédito','Linha de Credito','Linha do Crédito','Linha')),
     razaoSocial: limparRazaoSocial(getCol(row,'Nome do Cliente','Razão Social','Razao Social','Nome')),
     agencia: String(getCol(row,'Agência','Agencia') || '').trim(),
-    motivoRecusa: String(getCol(row,'Motivo Recusa','Motivo da Recusa') || '').trim(),
     motivoRecusa: String(getCol(row,'Motivo Recusa','Motivo da Recusa') || '').trim(),
   }))
 }
