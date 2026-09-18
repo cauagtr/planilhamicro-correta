@@ -1546,23 +1546,6 @@ const COLUNAS_PROIBIDAS = [
 // Se foi transferida para uma prefeitura, deixa de ser nossa.
 // A proposta veio por transferência de outro agente de crédito?
 // O FomentoNet marca isso na coluna Agência.
-function ehTransferencia(agencia) {
-  const a = (agencia || '').toString().toUpperCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-  return a.includes('TRANSFER')
-}
-
-// De qual agente veio. O texto da coluna Motivo Recusa costuma ser
-// "Trasferência de Carteira - De: FULANO para: AGENTE FOMENTO TRANSFERÊNCIAS"
-function origemDaTransferencia(motivo) {
-  const t = (motivo || '').toString().trim()
-  if (!t) return ''
-  const m = t.match(/De:\s*(.+?)\s+para:/i)
-  if (m) return m[1].trim()
-  if (/transfer/i.test(t)) return t.substring(0, 80)
-  return ''   // "Matriz (Endividamento SCR)" e afins não são origem
-}
-
 function ehAgenciaFomento(agencia) {
   const a = (agencia || '').toString().toUpperCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()
@@ -1824,7 +1807,7 @@ async function processarPlanilhas() {
       .filter(p => !p.finalizada
                 && !codigosAndamento.has(String(p.codigo).trim())
                 && !codigosFinalizados.has(String(p.codigo).trim()))
-      .map(p => ({ codigo: p.codigo, etapa: p.etapa, responsavel: p.responsavel }))
+      .map(p => ({ codigo: p.codigo, etapa: p.etapa, responsavel: p.responsavel, razao_social: p.razao_social }))
     const mapaAtribuicoes = {}
     if (propostasExistentes) {
       propostasExistentes.forEach(p => {
@@ -1857,8 +1840,6 @@ async function processarPlanilhas() {
       razao_social: r.razaoSocial || '',
       agencia: r.agencia || '',
       transferencia: ehTransferencia(r.agencia),
-      origem_transferencia: origemDaTransferencia(r.motivoRecusa),
-      transferencia: ehTransferencia(r.agencia),
       origem_transferencia: ehTransferencia(r.agencia) ? origemDaTransferencia(r.motivoRecusa) : '',
       na_etapa_desde: (() => {
         try { return r.naEtapaDe && !isNaN(r.naEtapaDe.getTime()) ? r.naEtapaDe.toISOString().split('T')[0] : null }
@@ -1883,15 +1864,18 @@ async function processarPlanilhas() {
     }
 
     setProgresso(55, `Salvando ${propostas.length} propostas...`)
+    // Grava em lotes: muito mais rapido que uma proposta por vez.
+    const LOTE_PROC = 500
     let salvas = 0
-    for (const p of propostas) {
+    for (let i = 0; i < propostas.length; i += LOTE_PROC) {
+      const lote = propostas.slice(i, i + LOTE_PROC)
       await sb('propostas?on_conflict=codigo', {
         method: 'POST',
-        prefer: 'resolution=merge-duplicates',
-        body: p
+        prefer: 'resolution=merge-duplicates,return=minimal',
+        body: lote
       })
-      salvas++
-      if (salvas % 10 === 0) setProgresso(55 + Math.round((salvas/propostas.length)*30), `Salvando... ${salvas}/${propostas.length}`)
+      salvas = Math.min(i + LOTE_PROC, propostas.length)
+      setProgresso(55 + Math.round((salvas/propostas.length)*30), `Salvando... ${salvas}/${propostas.length}`)
     }
 
     setProgresso(88, 'Salvando histórico...')
@@ -1940,8 +1924,20 @@ async function processarPlanilhas() {
         <b>${sumiramDoAndamento.length} proposta${sumiramDoAndamento.length>1?'s':''} ${sumiramDoAndamento.length>1?'sumiram':'sumiu'} da planilha de Andamento.</b><br>
         Isso quase sempre quer dizer que foram concedidas, recusadas ou excluídas.
         Enquanto não entrar a planilha de <b>Projetos Finalizados</b>, elas continuam marcadas como ativas no sistema.
-        <div style="margin-top:8px;font-size:11.5px;font-family:'IBM Plex Mono',monospace;color:#7c2d12">
-          ${sumiramDoAndamento.slice(0,12).map(p => p.codigo).join(' · ')}${sumiramDoAndamento.length>12 ? ` … e mais ${sumiramDoAndamento.length-12}` : ''}
+        Se voce ja sabe em que etapa elas pararam, define aqui na mao. A etapa manual vale
+        ate a proposta voltar a aparecer em alguma planilha: nesse caso a planilha vence.
+        <div id="sumiram-lista" style="margin-top:10px;max-height:320px;overflow:auto;background:#fff;border:1px solid #FDBA74;border-radius:8px">
+          ${sumiramDoAndamento.map(p => `
+            <div class="sumiu-linha" data-codigo="${p.codigo}" style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #FFEDD5">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12px;min-width:70px">${p.codigo}</span>
+              <span style="flex:1;font-size:12px;color:#7c2d12;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.razao_social || '—'}</span>
+              <span style="font-size:11px;color:#9a3412;min-width:120px">estava em: ${p.etapa || '—'}</span>
+              <select class="fa-input" style="max-width:200px;font-size:12px" id="sumiu-sel-${p.codigo}">
+                <option value="">Manter como esta</option>
+                ${[...FUNIL_ETAPAS, 'Concedido', 'Recusado', 'Excluído'].map(e => `<option value="${e}">${e}</option>`).join('')}
+              </select>
+              <button class="btn btn-secondary btn-sm" onclick="definirEtapaSumida('${p.codigo}')">Salvar</button>
+            </div>`).join('')}
         </div>
       </div>` : ''}
       <button class="btn btn-primary" onclick="setTab('propostas');carregarPropostas()">Ver Propostas →</button>`
@@ -2707,7 +2703,10 @@ async function atribuirResponsavel(codigo, resp, selectEl) {
     await sb(`propostas?codigo=eq.${encodeURIComponent(codigo)}`, {
       method: 'PATCH',
       prefer: 'return=minimal',
-      body: { responsavel: resp, responsavel_final: resp }
+      // atribuido_em / atribuido_por: rastro de quem veio da tela.
+      // Serve para, no futuro, separar atribuicao manual de automatica.
+      body: { responsavel: resp, responsavel_final: resp,
+              atribuido_em: new Date().toISOString(), atribuido_por: 'tela' }
     })
 
     // 2. Atualiza a planilha_referencia mais recente para persistir entre reprocessamentos
@@ -2748,6 +2747,33 @@ async function atribuirResponsavel(codigo, resp, selectEl) {
 // ============================================================
 // ── Mudar a etapa de uma proposta pela tela ──
 let mudarEtapaCodigo = null
+
+// Define na mao a etapa de uma proposta que saiu da planilha de Andamento.
+// Usado principalmente nas transferencias, que somem sem aparecer em
+// Finalizados. Se a proposta voltar em alguma planilha, a planilha vence.
+async function definirEtapaSumida(codigo) {
+  const sel = document.getElementById('sumiu-sel-' + codigo)
+  if (!sel || !sel.value) { showToast('Escolha uma etapa antes de salvar', 'error'); return }
+  const nova = sel.value
+  try {
+    await sb(`propostas?codigo=eq.${encodeURIComponent(codigo)}`, {
+      method: 'PATCH',
+      prefer: 'return=minimal',
+      body: { etapa: nova, na_etapa_desde: new Date().toISOString().split('T')[0] }
+    })
+    const linha = document.querySelector(`.sumiu-linha[data-codigo="${codigo}"]`)
+    if (linha) {
+      linha.style.background = '#F0FDF4'
+      linha.innerHTML = `<span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12px;min-width:70px">${codigo}</span>
+        <span style="flex:1;font-size:12px;color:#166534">✓ etapa definida como <b>${nova}</b></span>`
+    }
+    const idx = todasPropostas.findIndex(p => String(p.codigo) === String(codigo))
+    if (idx !== -1) todasPropostas[idx].etapa = nova
+    showToast(`✓ ${codigo} → ${nova}`)
+  } catch(e) {
+    showToast('Erro ao salvar etapa: ' + e.message, 'error')
+  }
+}
 
 function abrirModalEtapaProposta(codigo) {
   mudarEtapaCodigo = String(codigo)
