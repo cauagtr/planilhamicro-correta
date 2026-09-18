@@ -1879,7 +1879,7 @@ async function processarPlanilhas() {
     const removidasAgencia = antesAgencia - merged.length
 
     // Buscar atribuições manuais já salvas no banco para preservá-las
-    const propostasExistentes = await sbAll('propostas?select=codigo,etapa,finalizada,responsavel,responsavel_final,observacao,observacoes_anteriores,razao_social,data_cadastro')
+    const propostasExistentes = await sbAll('propostas?select=codigo,etapa,etapa_anterior,finalizada,responsavel,responsavel_final,observacao,observacoes_anteriores,razao_social,data_cadastro')
     // Propostas que estão ATIVAS no sistema mas não vieram na planilha de
     // Andamento: quase sempre significa que foram concedidas, recusadas ou
     // excluídas. Sem a planilha de Finalizados, elas ficariam travadas.
@@ -1913,6 +1913,14 @@ async function processarPlanilhas() {
     // quando na verdade deviam permanecer sem responsável.
     const herdaram = 0
 
+    // Guarda a etapa em que a proposta estava antes desta planilha.
+    // E a unica forma de saber, daqui pra frente, em que fase ela parou
+    // antes de virar Concedida, Recusada ou Excluida.
+    const mapaEtapaAtual = {}
+    ;(propostasExistentes || []).forEach(p => {
+      mapaEtapaAtual[String(p.codigo).trim()] = { etapa: p.etapa, anterior: p.etapa_anterior }
+    })
+
     const propostas = comVlookup.map(r => ({
       responsavel: r.responsavel || 'N/A',
       codigo: r.codigo,
@@ -1934,6 +1942,14 @@ async function processarPlanilhas() {
       observacoes_anteriores: r.observacoesAnteriores || '',
       observacao: r.observacaoAtual || '',
       responsavel_final: r.responsavelFinal || 'N/A',
+      etapa_anterior: (() => {
+        const ja = mapaEtapaAtual[String(r.codigo).trim()]
+        if (!ja) return null                       // proposta nova: sem historico
+        const antes = ja.etapa
+        // so troca quando a etapa mudou de verdade e a anterior nao era final
+        if (!antes || antes === r.etapa || ehFinalizada(antes)) return ja.anterior || null
+        return antes
+      })(),
     }))
 
     // Tira do banco as que foram transferidas para outra agência
@@ -2047,6 +2063,7 @@ let mostrarFinalizadas = false
 let ultimaAtualizacao = null  // por padrão, esconde as finalizadas do fluxo do dia a dia
 let filtroEtapa = ''
 let filtroTransferencia = ''
+let filtroSemRazao = ''
 let filtroLinhaCredito = ''
 let filtroSearch = ''
 let filtroDataIni = ''
@@ -2127,11 +2144,11 @@ function renderPropostas() {
           </select>
         </div>
         <div class="fa-campo">
-          <label>⇄ Origem da Proposta</label>
-          <select class="fa-input" id="fa-transf" onchange="aplicarFiltrosAvancados()">
+          <label>🏷️ Razão Social</label>
+          <select class="fa-input" id="fa-semrazao" onchange="aplicarFiltrosAvancados()">
             <option value="">Todas</option>
-            <option value="sim" ${filtroTransferencia==='sim'?'selected':''}>Só as recebidas por transferência</option>
-            <option value="nao" ${filtroTransferencia==='nao'?'selected':''}>Só as nossas desde o início</option>
+            <option value="sem" ${filtroSemRazao==='sem'?'selected':''}>Só as SEM razão social</option>
+            <option value="com" ${filtroSemRazao==='com'?'selected':''}>Só as com razão social</option>
           </select>
         </div>
         <div class="fa-campo">
@@ -2207,8 +2224,8 @@ function aplicarFiltrosData(rows) {
   if (filtroLinhaCredito) {
     rows = rows.filter(p => normalizarLinhaCredito(p.linha_credito) === filtroLinhaCredito)
   }
-  if (filtroTransferencia === 'sim') rows = rows.filter(p => !!p.transferencia)
-  if (filtroTransferencia === 'nao') rows = rows.filter(p => !p.transferencia)
+  if (filtroSemRazao === 'sem') rows = rows.filter(p => !String(p.razao_social||'').trim())
+  if (filtroSemRazao === 'com') rows = rows.filter(p => !!String(p.razao_social||'').trim())
   return rows
 }
 
@@ -2317,7 +2334,7 @@ function contarFiltrosAtivos() {
   if (filtroEtapa) n++
   if (filtroTransferencia) n++
   if (filtroLinhaCredito) n++
-  if (filtroTransferencia) n++
+  if (filtroSemRazao) n++
   return n
 }
 
@@ -2366,7 +2383,7 @@ function aplicarFiltrosAvancados() {
   filtroEtapa = document.getElementById('fa-etapa')?.value || ''
   filtroTransferencia = document.getElementById('fa-transf')?.value || ''
   filtroLinhaCredito = document.getElementById('fa-linha')?.value || ''
-  filtroTransferencia = document.getElementById('fa-transf')?.value || ''
+  filtroSemRazao = document.getElementById('fa-semrazao')?.value || ''
   renderTabelaPropostas()
   renderStatsPropostas()
   atualizarBadgeFiltros()
@@ -2375,8 +2392,8 @@ function aplicarFiltrosAvancados() {
 function limparFiltrosAvancados() {
   pagAtual = 1
   filtroDataIni = ''; filtroDataFim = ''; filtroValorMin = ''; filtroValorMax = ''
-  filtroEtapa = ''; filtroLinhaCredito = ''; filtroTransferencia = ''
-  const ids = ['fa-data-ini','fa-data-fim','fa-valor-min','fa-valor-max','fa-etapa','fa-linha','fa-transf']
+  filtroEtapa = ''; filtroLinhaCredito = ''; filtroTransferencia = ''; filtroSemRazao = ''
+  const ids = ['fa-data-ini','fa-data-fim','fa-valor-min','fa-valor-max','fa-etapa','fa-linha','fa-transf','fa-semrazao']
   ids.forEach(id => { const e = document.getElementById(id); if (e) e.value = '' })
   renderTabelaPropostas()
   renderStatsPropostas()
