@@ -1744,7 +1744,7 @@ async function processarArquivo(file, tipo) {
   prev.innerHTML = `
     <div class="fp-linha"><span class="fp-icone">✅</span> <b>${v.linhas}</b> linha${v.linhas!==1?'s':''} · <b>${v.colunas}</b> coluna${v.colunas!==1?'s':''}</div>
     ${v.proibidas.length
-      ? `<div class="fp-linha" style="color:#92400e"><span class="fp-icone">⚠️</span> Contém dados pessoais: <b>${v.proibidas.join(', ')}</b> — remova antes de enviar</div>`
+      ? `<div class="fp-linha" style="color:#92400e"><span class="fp-icone">🔒</span> Dados que o sistema não usa (<b>${v.proibidas.join(', ')}</b>) — descartados automaticamente na leitura</div>`
       : `<div class="fp-linha"><span class="fp-icone">🔒</span> Sem dados pessoais — OK</div>`}
     <div class="fp-cols">Colunas encontradas: <span class="fp-col-ok">${v.encontradas.join(', ')}</span></div>`
 
