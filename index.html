@@ -2059,6 +2059,7 @@ async function processarPlanilhas() {
 let todasPropostas = []
 let filtroColab = 'TODOS'
 let mostrarFinalizadas = false
+let mostrarArquivadas = false
 // Data/hora do último processamento de planilha, mostrada na aba Propostas
 let ultimaAtualizacao = null  // por padrão, esconde as finalizadas do fluxo do dia a dia
 let filtroEtapa = ''
@@ -2102,6 +2103,9 @@ function renderPropostas() {
       </button>
       <button class="btn btn-secondary btn-sm" id="btn-finalizadas" onclick="toggleFinalizadas()" title="Mostrar ou esconder propostas concedidas, recusadas e excluídas">
         <span id="lbl-finalizadas">👁 Mostrar finalizadas</span>
+      </button>
+      <button class="btn btn-secondary btn-sm" id="btn-arquivadas" onclick="toggleArquivadas()" title="Arquivadas saem do dia a dia mas continuam no sistema">
+        <span id="lbl-arquivadas">${mostrarArquivadas ? '↩ Voltar para as ativas' : '📦 Ver arquivadas'}</span>
       </button>
       <div class="export-group">
         <button class="btn btn-secondary btn-sm" onclick="exportarExcel()" title="Exportar para Excel">📊 Excel</button>
@@ -2257,6 +2261,8 @@ function getLinhasFiltradas() {
   if (!mostrarFinalizadas && !filtrouEtapaFinalizada && !temBusca) {
     rows = rows.filter(p => ehAtiva(p.etapa))
   }
+  // Arquivadas ficam fora do dia a dia ate alguem pedir para ve-las.
+  rows = mostrarArquivadas ? rows.filter(p => !!p.arquivada) : rows.filter(p => !p.arquivada)
   return rows
 }
 
@@ -2763,13 +2769,14 @@ function abrirModalRespLote() {
 }
 
 function montarGridResp(respAtual) {
-  document.getElementById('mr-grid').innerHTML = COLAB_LIST.filter(c => c !== 'N/A').map(c => {
+  // 'N/A' entra como opcao: e assim que se desfaz uma atribuicao errada.
+  document.getElementById('mr-grid').innerHTML = COLAB_LIST.map(c => {
     const cor = getCorColab(c)
     const fgC = getTextColor(cor)
     const ehAtual = c === respAtual
     return `<div class="mr-opt ${ehAtual?'atual':''}" data-nome="${c}" onclick="escolherResp('${c.replace(/'/g,"\\'")}')">
       <span class="mr-opt-avatar" style="background:${cor};color:${fgC}">${getIniciais(c)}</span>
-      <span class="mr-opt-nome">${c}</span>
+      <span class="mr-opt-nome">${c === 'N/A' ? 'Sem responsável (N/A)' : c}</span>
       ${ehAtual ? '<span class="mr-opt-check">✓</span>' : ''}
     </div>`
   }).join('')
@@ -3040,10 +3047,47 @@ function renderBarraLote() {
         ${n < totalFiltrado ? `<button class="btn-lote" onclick="selecionarTodosFiltrados()">Selecionar todas as ${totalFiltrado}</button>` : ''}
         <button class="btn-lote primario" onclick="abrirModalRespLote()">👤 Reatribuir para...</button>
         <button class="btn-lote" onclick="reatribuirLote('N/A')">🚫 Enviar para N/A</button>
+        ${mostrarArquivadas
+          ? `<button class="btn-lote" onclick="arquivarLote(false)">♻️ Desarquivar</button>`
+          : `<button class="btn-lote" onclick="arquivarLote(true)">📦 Arquivar</button>`}
         <button class="btn-lote perigo" onclick="excluirLote()">🗑️ Excluir do sistema</button>
         <button class="btn-lote" onclick="limparSelecao()">✕ Limpar</button>
       </div>
     </div>`
+}
+
+function toggleArquivadas() {
+  mostrarArquivadas = !mostrarArquivadas
+  pagAtual = 1
+  limparSelecao()
+  renderPropostas()
+  renderTabelaPropostas()
+  renderStatsPropostas()
+}
+
+// Arquiva ou desarquiva as selecionadas. Diferente de excluir: a proposta
+// continua no banco e nos numeros historicos, so sai da tela do dia a dia.
+async function arquivarLote(arquivar) {
+  const codigos = [...selecionadas]
+  if (!codigos.length) return
+  const verbo = arquivar ? 'Arquivar' : 'Desarquivar'
+  if (!confirm(`${verbo} ${codigos.length} proposta${codigos.length!==1?'s':''}?\n\nNada e apagado: da para desfazer a qualquer momento pelo botao "Ver arquivadas".`)) return
+  let ok = 0
+  for (const codigo of codigos) {
+    try {
+      await sb(`propostas?codigo=eq.${encodeURIComponent(codigo)}`, {
+        method: 'PATCH', prefer: 'return=minimal',
+        body: { arquivada: arquivar, arquivada_em: arquivar ? new Date().toISOString() : null }
+      })
+      const idx = todasPropostas.findIndex(p => String(p.codigo) === String(codigo))
+      if (idx !== -1) todasPropostas[idx].arquivada = arquivar
+      ok++
+    } catch(e) { /* segue */ }
+  }
+  limparSelecao()
+  renderTabelaPropostas()
+  renderStatsPropostas()
+  showToast(`${ok} proposta${ok!==1?'s':''} ${arquivar ? 'arquivada' : 'desarquivada'}${ok!==1?'s':''}`)
 }
 
 // Remove as propostas selecionadas do sistema.
