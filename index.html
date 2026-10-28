@@ -2631,7 +2631,9 @@ function renderTabelaPropostas() {
     const obs = p.observacao || ''
     // A observação aparece direto na linha, com a data na frente.
     // Clicar em qualquer lugar da célula abre o editor.
-    const abrirObs = `abrirModal('${p.codigo}','${(obs).replace(/'/g,"\\'")}','${(p.observacoes_anteriores||'').replace(/'/g,"\\'")}')`
+    // Só o código vai no onclick: aspas, quebras de linha ou barras no texto
+    // da observação quebravam o atributo e o clique não fazia nada
+    const abrirObs = `abrirModalPorCodigo('${p.codigo}')`
     const obsCell = obs
       ? `<td class="td-obs" onclick="${abrirObs}" title="Clique para editar">
            <span class="obs-data">${dataObs(p.observacao_em)}</span><span class="obs-texto">${obs}</span>
@@ -2954,6 +2956,11 @@ async function salvarEtapaProposta() {
   } finally {
     btn.disabled = false; btn.textContent = 'Salvar'
   }
+}
+
+function abrirModalPorCodigo(codigo) {
+  const p = todasPropostas.find(x => String(x.codigo) === String(codigo))
+  abrirModal(String(codigo), p ? (p.observacao || '') : '', p ? (p.observacoes_anteriores || '') : '')
 }
 
 function abrirModal(codigo, obs, obsAntiga) {
