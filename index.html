@@ -1992,6 +1992,7 @@ async function processarPlanilhas() {
 let todasPropostas = []
 let filtroColab = 'TODOS'
 let mostrarFinalizadas = false
+let mostrarArquivadas = false
 // Data/hora do último processamento de planilha, mostrada na aba Propostas
 let ultimaAtualizacao = null  // por padrão, esconde as finalizadas do fluxo do dia a dia
 let filtroEtapa = ''
@@ -2034,6 +2035,9 @@ function renderPropostas() {
       </button>
       <button class="btn btn-secondary btn-sm" id="btn-finalizadas" onclick="toggleFinalizadas()" title="Mostrar ou esconder propostas concedidas, recusadas e excluídas">
         <span id="lbl-finalizadas">👁 Mostrar finalizadas</span>
+      </button>
+      <button class="btn btn-secondary btn-sm" id="btn-arquivadas" onclick="toggleArquivadas()" title="Ver as propostas arquivadas (somem da lista e do painel, mas não são apagadas)">
+        <span id="lbl-arquivadas">${mostrarArquivadas ? '↩ Voltar às ativas' : '📦 Arquivadas'}</span>
       </button>
       <div class="export-group">
         <button class="btn btn-secondary btn-sm" onclick="exportarExcel()" title="Exportar para Excel">📊 Excel</button>
@@ -2189,6 +2193,9 @@ function getLinhasFiltradas() {
     rows = rows.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === filtroColab)
   }
   rows = aplicarFiltrosData(rows)
+  // Arquivadas: somem de tudo, menos quando o botão "Arquivadas" está ativo
+  rows = rows.filter(p => mostrarArquivadas ? !!p.arquivada : !p.arquivada)
+  if (mostrarArquivadas) return rows
   // Esconde finalizadas (Concedido/Recusado/Excluído) do fluxo do dia a dia,
   // exceto quando: o botão "Mostrar finalizadas" está ativo, o usuário
   // filtrou explicitamente por uma etapa finalizada, OU há uma busca textual ativa
@@ -2227,6 +2234,55 @@ function toggleFiltrosAvancados() {
 }
 
 // ── Mostrar / esconder propostas finalizadas ──
+function toggleArquivadas() {
+  mostrarArquivadas = !mostrarArquivadas
+  selecionadas.clear()
+  const lbl = document.getElementById('lbl-arquivadas')
+  if (lbl) lbl.textContent = mostrarArquivadas ? '↩ Voltar às ativas' : '📦 Arquivadas'
+  if (mostrarArquivadas) carregarArquivadas()
+  pagAtual = 1
+  renderTabelaPropostas(); renderStatsPropostas()
+}
+
+// As arquivadas finalizadas podem não estar na carga do dia: busca no banco
+let arquivadasCarregadas = false
+async function carregarArquivadas() {
+  if (arquivadasCarregadas) return
+  try {
+    const achadas = await sbAll('propostas?select=*&arquivada=eq.true')
+    arquivadasCarregadas = true
+    const jaTem = new Set(todasPropostas.map(p => String(p.codigo)))
+    const novas = (achadas || []).filter(p => !jaTem.has(String(p.codigo)))
+    if (novas.length) todasPropostas = todasPropostas.concat(novas)
+    if (mostrarArquivadas) { renderTabelaPropostas(); renderStatsPropostas() }
+  } catch(e) { showToast('Para usar o arquivo, rode o SQL adicionar_arquivada.sql no Supabase', 'error') }
+}
+
+async function arquivarLote(arquivar) {
+  const codigos = [...selecionadas]
+  if (!codigos.length) return
+  const txt = arquivar
+    ? `Arquivar ${codigos.length} proposta${codigos.length!==1?'s':''}?\n\nElas somem da lista e do painel, mas NÃO são apagadas. Dá para ver e desarquivar no botão "📦 Arquivadas".`
+    : `Desarquivar ${codigos.length} proposta${codigos.length!==1?'s':''}?`
+  if (!confirm(txt)) return
+  let ok = 0, erros = 0
+  for (let i = 0; i < codigos.length; i += 200) {
+    const lote = codigos.slice(i, i + 200)
+    try {
+      await sb(`propostas?codigo=in.(${lote.map(c => `"${c}"`).join(',')})`, {
+        method: 'PATCH', prefer: 'return=minimal', body: { arquivada: arquivar }
+      })
+      const set = new Set(lote)
+      todasPropostas.forEach(p => { if (set.has(String(p.codigo))) p.arquivada = arquivar })
+      ok += lote.length
+    } catch(e) { erros += lote.length; console.error(e) }
+  }
+  selecionadas.clear()
+  if (erros && !ok) showToast('Erro ao arquivar. Rode o SQL adicionar_arquivada.sql no Supabase.', 'error')
+  else showToast(`✓ ${ok} proposta${ok!==1?'s':''} ${arquivar ? 'arquivada' : 'desarquivada'}${ok!==1?'s':''}${erros?` · ${erros} com erro`:''}`)
+  renderTabelaPropostas(); renderStatsPropostas()
+}
+
 async function toggleFinalizadas() {
   mostrarFinalizadas = !mostrarFinalizadas
   pagAtual = 1
@@ -2841,6 +2897,19 @@ function fecharModalEtapaProposta(e) {
   if (e && e.target !== document.getElementById('modal-mudar-etapa')) return
   document.getElementById('modal-mudar-etapa').style.display = 'none'
   mudarEtapaCodigo = null
+  mudarEtapaLote = null
+}
+
+// Mudar a etapa de várias propostas selecionadas de uma vez
+let mudarEtapaLote = null
+function abrirModalEtapaLote() {
+  if (!selecionadas.size) return
+  mudarEtapaLote = [...selecionadas]
+  mudarEtapaCodigo = '__LOTE__'
+  document.getElementById('me-info').textContent = `${mudarEtapaLote.length} proposta${mudarEtapaLote.length!==1?'s':''} selecionada${mudarEtapaLote.length!==1?'s':''}`
+  const opcoes = [...FUNIL_ETAPAS, 'Concedido', 'Recusado', 'Excluído']
+  document.getElementById('me-select').innerHTML = opcoes.map(e => `<option value="${e}">${e}</option>`).join('')
+  document.getElementById('modal-mudar-etapa').style.display = 'flex'
 }
 
 async function salvarEtapaProposta() {
@@ -2848,6 +2917,26 @@ async function salvarEtapaProposta() {
   const nova = document.getElementById('me-select').value
   const btn = document.getElementById('me-salvar')
   btn.disabled = true; btn.textContent = 'Salvando...'
+  if (mudarEtapaCodigo === '__LOTE__') {
+    let ok = 0, erros = 0
+    for (let i = 0; i < mudarEtapaLote.length; i += 200) {
+      const lote = mudarEtapaLote.slice(i, i + 200)
+      try {
+        await sb(`propostas?codigo=in.(${lote.map(c => `"${c}"`).join(',')})`, {
+          method: 'PATCH', prefer: 'return=minimal', body: { etapa: nova }
+        })
+        const set = new Set(lote)
+        todasPropostas.forEach(p => { if (set.has(String(p.codigo))) { p.etapa = nova; p.finalizada = ehFinalizada(nova) } })
+        ok += lote.length
+      } catch(e) { erros += lote.length }
+    }
+    showToast(`✓ ${ok} proposta${ok!==1?'s':''} movida${ok!==1?'s':''} para ${nova}${erros?` · ${erros} com erro`:''}`)
+    selecionadas.clear(); mudarEtapaLote = null
+    btn.disabled = false; btn.textContent = 'Salvar'
+    fecharModalEtapaProposta()
+    renderTabelaPropostas(); renderStatsPropostas()
+    return
+  }
   try {
     await sb(`propostas?codigo=eq.${encodeURIComponent(mudarEtapaCodigo)}`, {
       method: 'PATCH', prefer: 'return=minimal', body: { etapa: nova }
@@ -2991,6 +3080,10 @@ function renderBarraLote() {
         ${n < totalFiltrado ? `<button class="btn-lote" onclick="selecionarTodosFiltrados()">Selecionar todas as ${totalFiltrado}</button>` : ''}
         <button class="btn-lote primario" onclick="abrirModalRespLote()">👤 Reatribuir para...</button>
         <button class="btn-lote" onclick="reatribuirLote('N/A')">🚫 Enviar para N/A</button>
+        <button class="btn-lote" onclick="abrirModalEtapaLote()">🔀 Mudar etapa</button>
+        ${mostrarArquivadas
+          ? `<button class="btn-lote" onclick="arquivarLote(false)">↩ Desarquivar</button>`
+          : `<button class="btn-lote" onclick="arquivarLote(true)">📦 Arquivar</button>`}
         <button class="btn-lote perigo" onclick="excluirLote()">🗑️ Excluir do sistema</button>
         <button class="btn-lote" onclick="limparSelecao()">✕ Limpar</button>
       </div>
@@ -3031,7 +3124,7 @@ async function reatribuirLote(novoResp) {
   const codigos = [...selecionadas]
   if (!codigos.length) return
 
-  const acao = novoResp === "N/A" ? `Remover o respons√°vel de ${codigos.length} proposta${codigos.length!==1?"s":""}?` : `Reatribuir ${codigos.length} proposta${codigos.length!==1?"s":""} para ${novoResp}?`; if (!confirm(acao)) return
+  const acao = novoResp === "N/A" ? `Remover o responsável de ${codigos.length} proposta${codigos.length!==1?"s":""}?` : `Reatribuir ${codigos.length} proposta${codigos.length!==1?"s":""} para ${novoResp}?`; if (!confirm(acao)) return
 
   const cont = document.getElementById('lote-bar-container')
   if (cont) cont.innerHTML = `<div class="lote-bar ativo"><span class="lote-count"><span class="spinner"></span> Reatribuindo 0/${codigos.length}...</span></div>`
@@ -3768,7 +3861,7 @@ function propostasPainelFiltradas() {
 
 // Aplica os filtros do painel a qualquer lista de propostas
 function aplicarFiltrosPainel(lista) {
-  let props = [...(lista || [])]
+  let props = (lista || []).filter(p => !p.arquivada)
   if (painelFiltroColab) props = props.filter(p => (p.responsavel||'N/A').toUpperCase().trim() === painelFiltroColab)
   if (painelFiltroEtapa) props = props.filter(p => (p.etapa||'').trim() === painelFiltroEtapa)
   if (painelFiltroLinha) props = props.filter(p => normalizarLinhaCredito(p.linha_credito) === painelFiltroLinha)
