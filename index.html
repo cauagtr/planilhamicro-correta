@@ -3421,15 +3421,15 @@ function renderPainel() {
     <div class="painel-filtros painel-filtros-data">
       <div class="pf-data">
         <span class="pf-data-lbl">📅 Data de Cadastro</span>
-        <input type="date" class="fa-input" value="${painelCadIni}" onchange="painelCadIni=this.value; renderPainel()"/>
+        <input type="date" class="fa-input" value="${painelCadIni}" max="9999-12-31" onchange="if(dataPronta(this.value)){painelCadIni=this.value; renderPainel()}"/>
         <span class="pf-ate">até</span>
-        <input type="date" class="fa-input" value="${painelCadFim}" onchange="painelCadFim=this.value; renderPainel()"/>
+        <input type="date" class="fa-input" value="${painelCadFim}" max="9999-12-31" onchange="if(dataPronta(this.value)){painelCadFim=this.value; renderPainel()}"/>
       </div>
       <div class="pf-data">
         <span class="pf-data-lbl">⏱️ Na Etapa Desde</span>
-        <input type="date" class="fa-input" value="${painelEtapaIni}" onchange="painelEtapaIni=this.value; renderPainel()"/>
+        <input type="date" class="fa-input" value="${painelEtapaIni}" max="9999-12-31" onchange="if(dataPronta(this.value)){painelEtapaIni=this.value; renderPainel()}"/>
         <span class="pf-ate">até</span>
-        <input type="date" class="fa-input" value="${painelEtapaFim}" onchange="painelEtapaFim=this.value; renderPainel()"/>
+        <input type="date" class="fa-input" value="${painelEtapaFim}" max="9999-12-31" onchange="if(dataPronta(this.value)){painelEtapaFim=this.value; renderPainel()}"/>
       </div>
     </div>`
 
@@ -3491,9 +3491,9 @@ function renderPainel() {
       <div class="painel-secao-sub">Listagem das propostas por etapa — clique no número para ver a lista</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 12px;font-size:13px">
         <span style="font-weight:600">Data de Cadastro (só desta seção):</span>
-        <input type="date" value="${etapasCadIni}" onchange="setFiltroEtapas('ini', this.value)" style="padding:4px 6px;border:1px solid #d1d5db;border-radius:6px">
+        <input type="date" value="${etapasCadIni}" max="9999-12-31" onchange="if(dataPronta(this.value)) setFiltroEtapas('ini', this.value)" style="padding:4px 6px;border:1px solid #d1d5db;border-radius:6px">
         <span>até</span>
-        <input type="date" value="${etapasCadFim}" onchange="setFiltroEtapas('fim', this.value)" style="padding:4px 6px;border:1px solid #d1d5db;border-radius:6px">
+        <input type="date" value="${etapasCadFim}" max="9999-12-31" onchange="if(dataPronta(this.value)) setFiltroEtapas('fim', this.value)" style="padding:4px 6px;border:1px solid #d1d5db;border-radius:6px">
         ${(etapasCadIni||etapasCadFim) ? `<button onclick="etapasCadIni='';etapasCadFim='';renderPainel()" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer">Limpar</button><span style="color:#6b7280">${propsEtapas.length} proposta(s) no período</span>` : ''}
       </div>
       <div class="etapas-colunas">
@@ -3708,6 +3708,15 @@ function limparFiltrosPainel() {
   painelCadIni = ''; painelCadFim = ''; painelEtapaIni = ''; painelEtapaFim = ''
   etapasCadIni = ''; etapasCadFim = ''
   renderPainel()
+}
+
+// Data digitada no campo: só aplica quando o ano estiver completo (ou campo vazio).
+// Sem isso, ao digitar "2" o navegador já entrega o ano 0002, a página
+// redesenha e o campo perde o que você estava digitando.
+function dataPronta(v) {
+  if (!v) return true
+  const ano = parseInt(String(v).split('-')[0], 10)
+  return ano >= 2000 && ano <= 2100
 }
 
 // Filtro próprio da seção Etapas (Data de Cadastro), aplicado por cima dos filtros gerais
