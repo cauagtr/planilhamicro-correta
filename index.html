@@ -798,7 +798,6 @@ const COLABORADORES = {
   CONRADO:   '#E88080',
   JULIANO:   '#93C47D',
   LETICIA:   '#EA9999',
-  'LETICIA C': '#B4A7D6',
   MARCOS:    '#6FA8DC',
   PEDRO:     '#9FC5E8',
   RAIANE:    '#D5A6E6',
@@ -806,7 +805,7 @@ const COLABORADORES = {
   'N/A':     '#E0E0E0',
 }
 // Ordem dos botões de filtro: colaboradores na ordem certa, depois Valério e N/A no final
-const COLAB_LIST = ['ANNA','CAUÃ','CONRADO','DAVI','JULIANO','LETICIA','LETICIA C','MARCOS','PEDRO','RAIANE','N/A']
+const COLAB_LIST = ['ANNA','CAUÃ','CONRADO','DAVI','JULIANO','LETICIA','MARCOS','PEDRO','RAIANE','N/A']
 
 // ── Etapas finalizadas (não estão mais em tratativa) ──
 const ETAPAS_FINALIZADAS = ['concedido','excluído','excluido','recusado']
@@ -1449,6 +1448,27 @@ async function importarHistorico() {
     const mapa = {}
     ;(existentes||[]).forEach(p => { mapa[String(p.codigo).trim()] = p })
 
+    // 1b) Só "Agência de Fomento" pertence ao sistema. As de prefeituras/outras
+    // agências não entram — e se já estiverem no banco, saem (com backup).
+    const foraHist = linhasHist.filter(r => !ehAgenciaFomento(r.agencia))
+    linhasHist = linhasHist.filter(r => ehAgenciaFomento(r.agencia))
+    let removidasOutraAgencia = 0
+    const codsFora = foraHist.map(r => String(r.codigo).trim()).filter(c => mapa[c])
+    for (let i = 0; i < codsFora.length; i += 200) {
+      const lote = codsFora.slice(i, i + 200)
+      setProgHist(12, `Removendo ${codsFora.length.toLocaleString('pt-BR')} propostas de outras agências...`)
+      const lista = lote.map(c => `"${c}"`).join(',')
+      const antigas = await sb(`propostas?select=*&codigo=in.(${lista})`)
+      if (antigas && antigas.length) {
+        try {
+          await sb('backup_excluidas', { method: 'POST', prefer: 'return=minimal',
+            body: antigas.map(a => ({ codigo: String(a.codigo), dados: a })) })
+        } catch(e) { /* sem tabela de backup: segue */ }
+      }
+      await sb(`propostas?codigo=in.(${lista})`, { method: 'DELETE', prefer: 'return=minimal' })
+      removidasOutraAgencia += lote.length
+    }
+
     // 2) Monta os registros
     setProgHist(20, 'Preparando os dados...')
     const iso = d => { try { return d && !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : null } catch(e) { return null } }
@@ -1472,6 +1492,7 @@ async function importarHistorico() {
         responsavel_final: ja ? ja.responsavel_final : 'N/A',
         observacao: ja ? (ja.observacao || '') : '',
         observacoes_anteriores: '',
+        ...(r.agencia ? { agencia: r.agencia, transferencia: ehTransferencia(r.agencia) } : {}),
       }
     })
 
@@ -1502,6 +1523,7 @@ async function importarHistorico() {
         <div class="stat-card"><div class="stat-label">Lidas do arquivo</div><div class="stat-value">${registros.length}</div></div>
         <div class="stat-card"><div class="stat-label">Novas no sistema</div><div class="stat-value" style="color:#166534">${novas}</div></div>
         <div class="stat-card"><div class="stat-label">Já existiam</div><div class="stat-value" style="color:#92400e">${atualizadas}</div><div class="stat-sub">atualizadas, responsável mantido</div></div>
+        <div class="stat-card"><div class="stat-label">Outras agências</div><div class="stat-value" style="color:#991b1b">${foraHist.length}</div><div class="stat-sub">ignoradas · ${removidasOutraAgencia} removidas do banco</div></div>
       </div>`
     showToast(`✓ ${registros.length} propostas importadas`)
   } catch(e) {
