@@ -1849,6 +1849,9 @@ async function processarPlanilhas() {
                 && !codigosAndamento.has(String(p.codigo).trim())
                 && !codigosFinalizados.has(String(p.codigo).trim()))
       .map(p => ({ codigo: p.codigo, etapa: p.etapa, responsavel: p.responsavel }))
+    // Razão social já salva (inclusive digitada à mão): não se perde se a planilha vier sem
+    const mapaRazao = {}
+    ;(propostasExistentes || []).forEach(p => { if (p.razao_social) mapaRazao[String(p.codigo).trim()] = p.razao_social })
     const mapaAtribuicoes = {}
     if (propostasExistentes) {
       propostasExistentes.forEach(p => {
@@ -1878,7 +1881,7 @@ async function processarPlanilhas() {
       etapa: r.etapa,
       valor: parseValor(r.valor),
       linha_credito: r.linhaCredito || '',
-      razao_social: r.razaoSocial || '',
+      razao_social: r.razaoSocial || mapaRazao[String(r.codigo).trim()] || '',
       agencia: r.agencia || '',
       transferencia: ehTransferencia(r.agencia),
       origem_transferencia: origemDaTransferencia(r.motivoRecusa),
@@ -2017,7 +2020,7 @@ function renderPropostas() {
         const fg = getTextColor(bg)
         return `<button class="filtro-btn" id="filtro-${c}" style="background:${bg};color:${fg};border-color:${bg}" onclick="setFiltroColab('${c}')">${c}</button>`
       }).join('')}
-      <button class="filtro-btn" id="filtro-NOVAS" style="background:#f0fdf4;color:#166534;border:2px solid #86efac" onclick="setFiltroColab('NOVAS')">🆕 Novas<span class="ajuda" data-ajuda="Propostas sem responsável: todas as em andamento e também as concedidas, recusadas e excluídas cadastradas a partir de 2025, para você atribuir manualmente." onclick="event.stopPropagation()">?</span></button>
+      <button class="filtro-btn" id="filtro-NOVAS" style="background:#f0fdf4;color:#166534;border:2px solid #86efac" onclick="setFiltroColab('NOVAS')">🆕 Novas<span class="ajuda" data-ajuda="Propostas sem responsável QUE AINDA ESTÃO EM ANDAMENTO — as que precisam de atribuição hoje. As finalizadas sem dono ficam no filtro N/A." onclick="event.stopPropagation()">?</span></button>
       ${['N/A'].map(c => {
         const bg = COLABORADORES[c]
         const fg = getTextColor(bg)
@@ -2164,9 +2167,14 @@ function getLinhasFiltradas() {
   if (filtroColab === 'NOVAS') {
     rows = rows.filter(p => {
       const resp = (p.responsavel||'N/A').toUpperCase().trim()
-      if (resp !== 'N/A') return false
+      return resp === 'N/A' && ehAtiva(p.etapa)
+    })
+  } else if (filtroColab === 'N/A') {
+    // N/A: todas sem responsável — as em andamento e também as finalizadas
+    // de 2025–2026, para você atribuir manualmente
+    rows = rows.filter(p => {
+      if ((p.responsavel||'N/A').toUpperCase().trim() !== 'N/A') return false
       if (ehAtiva(p.etapa)) return true
-      // Finalizadas sem dono de 2025–2026 também entram, para atribuir manualmente
       const dt = p.data_cadastro ? String(p.data_cadastro).split('T')[0] : ''
       return dt >= INICIO_SAFRA
     })
@@ -2187,7 +2195,7 @@ function getLinhasFiltradas() {
   // (a busca deve encontrar qualquer proposta, inclusive finalizadas).
   const filtrouEtapaFinalizada = filtroEtapa && ehFinalizada(filtroEtapa)
   const temBusca = filtroSearch.trim().length > 0
-  if (!mostrarFinalizadas && !filtrouEtapaFinalizada && !temBusca && filtroColab !== 'NOVAS') {
+  if (!mostrarFinalizadas && !filtrouEtapaFinalizada && !temBusca && filtroColab !== 'N/A') {
     rows = rows.filter(p => ehAtiva(p.etapa))
   }
   return rows
@@ -2427,7 +2435,7 @@ function setFiltroColab(c) {
     btn.classList.add('active')
     if (c === 'NOVAS') btn.style.borderColor = '#003366'
   }
-  if (c === 'NOVAS') carregarFinalizadasSemDono()
+  if (c === 'N/A') carregarFinalizadasSemDono()
   renderTabelaPropostas()
   renderStatsPropostas()
   atualizarBadgeFiltros()
@@ -2445,9 +2453,29 @@ async function carregarFinalizadasSemDono() {
     const novas = (achadas || []).filter(p => !jaTem.has(String(p.codigo)))
     if (!novas.length) return
     todasPropostas = todasPropostas.concat(novas)
-    if (filtroColab === 'NOVAS') { renderTabelaPropostas(); renderStatsPropostas() }
-    showToast(`✓ ${novas.length} finalizada${novas.length>1?'s':''} sem dono (2025–2026) incluída${novas.length>1?'s':''} em Novas`)
+    if (filtroColab === 'N/A') { renderTabelaPropostas(); renderStatsPropostas() }
+    showToast(`✓ ${novas.length} finalizada${novas.length>1?'s':''} sem dono (2025–2026) incluída${novas.length>1?'s':''} em N/A`)
   } catch(e) { finalizadasSemDonoCarregadas = false }
+}
+
+// Edição manual da razão social (útil nas transferências, que vêm sem nome)
+async function editarRazaoSocial(codigo) {
+  const p = todasPropostas.find(x => String(x.codigo) === String(codigo))
+  const atual = p ? (p.razao_social || '') : ''
+  const novo = prompt(`Razão social da proposta ${codigo}:`, atual)
+  if (novo === null) return
+  const valor = limparRazaoSocial(novo).toUpperCase()
+  if (valor === atual) return
+  try {
+    await sb(`propostas?codigo=eq.${encodeURIComponent(codigo)}`, {
+      method: 'PATCH', prefer: 'return=minimal', body: { razao_social: valor }
+    })
+    if (p) p.razao_social = valor
+    renderTabelaPropostas()
+    showToast(valor ? '✓ Razão social salva' : '✓ Razão social apagada')
+  } catch(e) {
+    showToast('Erro ao salvar: ' + e.message, 'error')
+  }
 }
 
 let buscaTimer = null
@@ -2568,7 +2596,9 @@ function renderTabelaPropostas() {
       ${respCell}
       <td class="td-cnpj" style="font-weight:700">${p.codigo||'—'}${p.transferencia ? `<span class="selo-transf" title="Recebida por transferência${p.origem_transferencia ? ' de ' + p.origem_transferencia : ''}">🔄</span>` : ''}</td>
       <td class="td-razao" title="${((p.razao_social||'') + (p.transferencia ? ' · transferida de ' + (p.origem_transferencia || 'outro agente') : '')).replace(/"/g,'&quot;')}">
-        ${p.transferencia ? '<span class="selo-transf" title="Recebida por transferência de outro agente de crédito">⇄</span>' : ''}${p.razao_social || '<span style="color:#cbd5e1">—</span>'}
+        ${p.transferencia ? '<span class="selo-transf" title="Recebida por transferência de outro agente de crédito">⇄</span>' : ''}${p.razao_social
+          ? `${p.razao_social} <span class="editar-razao" onclick="editarRazaoSocial('${p.codigo}')" title="Editar razão social" style="cursor:pointer;color:#94a3b8;font-size:11px">✎</span>`
+          : `<span onclick="editarRazaoSocial('${p.codigo}')" title="Digitar a razão social" style="cursor:pointer;color:#94a3b8;font-style:italic;font-size:12px">+ adicionar razão social</span>`}
       </td>
       <td>${linhaBadge(p.linha_credito)}</td>
       <td class="td-etapa" onclick="abrirModalEtapaProposta('${p.codigo}')" title="Clique para mudar a etapa" style="cursor:pointer">${etapaBadge(p.etapa)}</td>
