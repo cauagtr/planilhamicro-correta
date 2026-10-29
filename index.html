@@ -1627,7 +1627,8 @@ function achouColuna(cabecalhos, nomes) {
 async function validarPlanilha(file) {
   try {
     const rows = await lerPlanilha(file)
-    if (!rows.length) return { ok: false, erro: 'A planilha está vazia (nenhuma linha de dados).' }
+    // Planilha vazia é válida: significa que não houve propostas naquele dia
+    if (!rows.length) return { ok: true, vazia: true, linhas: 0, colunas: 0, faltando: [], proibidas: [], encontradas: [], erro: null }
 
     const cabecalhos = Object.keys(rows[0])
     const faltando = COLUNAS_NECESSARIAS.filter(c => !achouColuna(cabecalhos, c.nomes)).map(c => c.label)
@@ -1677,6 +1678,15 @@ async function processarArquivo(file, tipo) {
     return
   }
 
+  if (v.vazia) {
+    prev.className = 'file-preview'
+    prev.innerHTML = tipo === 'andamento'
+      ? `<div class="fp-linha" style="color:#92400e"><span class="fp-icone">⚠️</span> <b>Planilha vazia</b> — nenhuma proposta em andamento. Aceita, mas confira se é isso mesmo: todas as ativas vão aparecer como "saíram do andamento".</div>`
+      : `<div class="fp-linha"><span class="fp-icone">⚪</span> <b>Planilha vazia</b> — nenhuma proposta hoje. Tudo certo, pode processar.</div>`
+    atualizarBotaoProcessar()
+    return
+  }
+
   prev.className = 'file-preview'
   prev.innerHTML = `
     <div class="fp-linha"><span class="fp-icone">✅</span> <b>${v.linhas}</b> linha${v.linhas!==1?'s':''} · <b>${v.colunas}</b> coluna${v.colunas!==1?'s':''}</div>
@@ -1719,6 +1729,7 @@ function atualizarBotaoProcessar() {
 
 function lerPlanilha(file) {
   return new Promise((res, rej) => {
+    if (!file || file.size === 0) { res([]); return }   // arquivo sem nenhum conteúdo
     const reader = new FileReader()
     reader.onload = e => {
       try {
