@@ -835,7 +835,49 @@ function linhaPermitida(txt) {
   if (!t) return true
   return LINHAS_CREDITO.includes(normalizarLinhaCredito(t))
 }
+
+// ══ CONFIGURAÇÃO CENTRAL (editada no site do Administrador) ══
+// Colaboradores e linhas de crédito vêm das tabelas config_colaboradores e
+// config_linhas do Supabase. Se não der para ler, vale a lista fixa deste arquivo.
+const SISTEMA_CONFIG = 'micro'
+let REGRAS_LINHA = null
+const semAcentoUp = t => (t ?? '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
+async function carregarConfigCentral() {
+  try {
+    const comPrazo = pr => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error('tempo esgotado')), 5000))])
+    const [cols, lins] = await comPrazo(Promise.all([
+      sb(`config_colaboradores?select=*&sistema=eq.${SISTEMA_CONFIG}&order=ordem.asc`),
+      sb(`config_linhas?select=*&sistema=eq.${SISTEMA_CONFIG}&order=prioridade.asc`),
+    ]))
+    if (cols && cols.length) {
+      cols.forEach(c => { COLABORADORES[c.nome] = c.cor })
+      COLAB_LIST.splice(0, COLAB_LIST.length, ...cols.filter(c => c.ativo).map(c => c.nome), 'N/A')
+    }
+    if (lins && lins.length) {
+      REGRAS_LINHA = lins.map(l => ({
+        nome: l.nome, cor: l.cor, ativa: !!l.ativa,
+        palavras: String(l.palavras || '').split(',').map(x => semAcentoUp(x).trim()).filter(Boolean),
+      }))
+      LINHAS_CREDITO.splice(0, LINHAS_CREDITO.length, ...REGRAS_LINHA.filter(l => l.ativa).map(l => l.nome))
+    }
+    return true
+  } catch(e) {
+    console.warn('Configuração central indisponível — usando a lista fixa.', e)
+    return false
+  }
+}
+// Linha da planilha → nome oficial, pelas regras do Admin (null = usar a regra fixa)
+function linhaPelaConfig(txt) {
+  if (!REGRAS_LINHA) return null
+  const u = semAcentoUp(txt).trim()
+  if (!u) return ''
+  const r = REGRAS_LINHA.find(l => l.palavras.length && l.palavras.every(pv => u.includes(pv)))
+  return r ? r.nome : (txt ?? '').toString().trim()
+}
+
 function normalizarLinhaCredito(txt) {
+  const pelaConfig = linhaPelaConfig(txt)
+  if (pelaConfig !== null) return pelaConfig
   const t = (txt||'').toString().toUpperCase().trim()
   if (!t) return ''
   // A ORDEM IMPORTA: os nomes compostos precisam ser testados primeiro,
@@ -851,6 +893,7 @@ function normalizarLinhaCredito(txt) {
   return txt.toString().trim()  // mantém original se não reconhecer
 }
 function corLinhaCredito(linha) {
+  if (REGRAS_LINHA) { const r = REGRAS_LINHA.find(l => l.nome === linha); if (r) return r.cor }
   if (linha === 'Micro Mulher') return '#DB2777'
   if (linha === 'Micro Fácil') return '#2563EB'
   if (linha === 'Taxista') return '#CA8A04'
@@ -1845,7 +1888,9 @@ function aplicarVlookup(rows, ref, mapaAtribuicoes = {}) {
     }
     // Prioridade 2: referência do processamento anterior (proposta nova)
     const r = ref.find(x => String(x.codigo).trim() === chave)
-    const resp = r && r.responsavel_final && r.responsavel_final !== 'N/A' ? r.responsavel_final : 'N/A'
+    // Só herda da referência se a pessoa ainda estiver ativa (removidos no Admin não voltam)
+    const resp = r && r.responsavel_final && r.responsavel_final !== 'N/A'
+      && COLAB_LIST.includes(String(r.responsavel_final).toUpperCase().trim()) ? r.responsavel_final : 'N/A'
     return {
       ...row,
       observacaoAtual: r ? (r.observacao || '') : '',
@@ -4308,7 +4353,7 @@ async function carregarArquivosEnviados() {
   const el = document.getElementById('lista-arquivos')
   if (!el) return
   try {
-    const lista = await sbAll('arquivos_enviados?select=id,criado_em,nome,origem,tamanho&order=criado_em.desc')
+    const lista = await sbAll('arquivos_enviados?select=id,criado_em,nome,origem,tamanho&origem=not.like.FGF*&order=criado_em.desc')
     if (!lista || !lista.length) {
       el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>Nenhum arquivo guardado ainda. A partir de agora, todo arquivo carregado aparece aqui.</p></div>`
       return
@@ -4392,9 +4437,13 @@ document.addEventListener('keydown', e => {
   if (mObs && mObs.style.display === 'flex') { fecharModal(); return }
 })
 
-renderProcessar()
-renderPropostas()
-renderHistorico()
+// Lê a configuração central antes de desenhar a tela
+;(async () => {
+  await carregarConfigCentral()
+  renderProcessar()
+  renderPropostas()
+  renderHistorico()
+})()
 </script>
 <!-- MODAL: PROPOSTAS DE UMA ETAPA -->
 <div class="modal-overlay" id="modal-etapa" style="display:none" onclick="fecharModalEtapa(event)">
