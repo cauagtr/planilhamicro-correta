@@ -836,6 +836,21 @@ function linhaPermitida(txt) {
   return LINHAS_CREDITO.includes(normalizarLinhaCredito(t))
 }
 
+// ══ COLABORADORES INATIVOS NÃO APARECEM ══
+// Quem foi removido da equipe no Administrador não aparece em lugar nenhum:
+// na tela, a proposta dele é mostrada como "N/A" (sem responsável).
+// O banco não é alterado aqui — só a exibição.
+function ocultarInativos(lista) {
+  const ativos = new Set(COLAB_LIST.filter(n => n !== 'N/A'))
+  ;(lista || []).forEach(p => {
+    const r = (p.responsavel || 'N/A').toString().toUpperCase().trim()
+    if (r !== 'N/A' && !ativos.has(r)) { p.responsavel = 'N/A'; p.responsavel_final = 'N/A' }
+    const rf = (p.responsavel_final || '').toString().toUpperCase().trim()
+    if (rf && rf !== 'N/A' && !ativos.has(rf)) p.responsavel_final = 'N/A'
+  })
+  return lista
+}
+
 // ══ CONFIGURAÇÃO CENTRAL (editada no site do Administrador) ══
 // Colaboradores e linhas de crédito vêm das tabelas config_colaboradores e
 // config_linhas do Supabase. Se não der para ler, vale a lista fixa deste arquivo.
@@ -2229,7 +2244,7 @@ async function carregarPropostas() {
     // No dia a dia carrega apenas as propostas ATIVAS — é o que interessa
     // e mantém a tela rápida mesmo com dezenas de milhares no histórico.
     const data = await sbAll('propostas?select=*&finalizada=eq.false&order=codigo.asc')
-    todasPropostas = data || []
+    todasPropostas = ocultarInativos(data || [])
     // Descobre quando foi o último processamento, para mostrar na tela
     try {
       const h = await sb('historico_processamentos?select=criado_em&order=criado_em.desc&limit=1')
@@ -2366,7 +2381,7 @@ async function carregarArquivadas() {
     arquivadasCarregadas = true
     const jaTem = new Set(todasPropostas.map(p => String(p.codigo)))
     const novas = (achadas || []).filter(p => !jaTem.has(String(p.codigo)))
-    if (novas.length) todasPropostas = todasPropostas.concat(novas)
+    if (novas.length) todasPropostas = todasPropostas.concat(ocultarInativos(novas))
     if (mostrarArquivadas) { renderTabelaPropostas(); renderStatsPropostas() }
   } catch(e) { showToast('Para usar o arquivo, rode o SQL adicionar_arquivada.sql no Supabase', 'error') }
 }
@@ -2409,7 +2424,7 @@ async function toggleFinalizadas() {
     try {
       const fin = await sbAll('propostas?select=*&finalizada=eq.true&order=codigo.asc')
       const jaTem = new Set(todasPropostas.map(p => String(p.codigo)))
-      todasPropostas = todasPropostas.concat((fin||[]).filter(p => !jaTem.has(String(p.codigo))))
+      todasPropostas = todasPropostas.concat(ocultarInativos((fin||[]).filter(p => !jaTem.has(String(p.codigo)))))
       finalizadasCarregadas = true
       popularSelectEtapas()
       showToast(`✓ ${(fin||[]).length} propostas finalizadas carregadas`)
@@ -2621,7 +2636,7 @@ async function carregarFinalizadasSemDono() {
     const jaTem = new Set(todasPropostas.map(p => String(p.codigo)))
     const novas = (achadas || []).filter(p => !jaTem.has(String(p.codigo)))
     if (!novas.length) return
-    todasPropostas = todasPropostas.concat(novas)
+    todasPropostas = todasPropostas.concat(ocultarInativos(novas))
     if (filtroColab === 'N/A') { renderTabelaPropostas(); renderStatsPropostas() }
     showToast(`✓ ${novas.length} finalizada${novas.length>1?'s':''} sem dono (2025–2026) incluída${novas.length>1?'s':''} em N/A`)
   } catch(e) { finalizadasSemDonoCarregadas = false }
@@ -2669,7 +2684,7 @@ async function buscarNoBanco(termo) {
     const jaTem = new Set(todasPropostas.map(p => String(p.codigo)))
     const novas = achadas.filter(p => !jaTem.has(String(p.codigo)))
     if (!novas.length) return
-    todasPropostas = todasPropostas.concat(novas)
+    todasPropostas = todasPropostas.concat(ocultarInativos(novas))
     renderTabelaPropostas()
     renderStatsPropostas()
     showToast(`✓ ${novas.length} proposta${novas.length>1?'s':''} encontrada${novas.length>1?'s':''} no histórico`)
@@ -3470,9 +3485,9 @@ async function carregarPainel() {
         ? Promise.resolve([])
         : sbAll(`propostas?select=*&finalizada=eq.true&data_cadastro=gte.${INICIO_SAFRA}`)
     ])
-    dadosPainel.propostas = props || []
+    dadosPainel.propostas = ocultarInativos(props || [])
     dadosPainel.historico = hist || []
-    dadosPainel.safraFinalizadas = safraFin || []
+    dadosPainel.safraFinalizadas = ocultarInativos(safraFin || [])
     renderPainel()
   } catch(e) {
     el.innerHTML = `<div class="card"><div class="alert alert-danger">❌ Erro ao carregar painel: ${e.message}</div></div>`
