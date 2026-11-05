@@ -3722,7 +3722,8 @@ function renderPainel() {
   const basePainel = [...dadosPainel.propostas, ...(dadosPainel.safraFinalizadas || [])].filter(p => !p.arquivada)
   const ordemEtapa = (a,b) => { const pa=posicaoFunil(a), pb=posicaoFunil(b); if(pa===-1&&pb===-1) return a.localeCompare(b,'pt-BR'); if(pa===-1) return 1; if(pb===-1) return -1; return pa-pb }
   painelOpcoesAtuais = {
-    colab: [...new Set(basePainel.map(chaveColab))].sort((a,b) => a === 'N/A' ? 1 : b === 'N/A' ? -1 : a.localeCompare(b,'pt-BR')),
+    // Equipe ativa sempre aparece (mesmo quem ainda não tem proposta) + N/A
+    colab: [...new Set([...COLAB_LIST, ...basePainel.map(chaveColab)])].filter(n => n === 'N/A' || COLAB_LIST.includes(n)).sort((a,b) => a === 'N/A' ? 1 : b === 'N/A' ? -1 : a.localeCompare(b,'pt-BR')),
     etapa: [...new Set(basePainel.map(chaveEtapa))].sort(ordemEtapa),
     linha: [...new Set(basePainel.map(chaveLinha))].sort((a,b) => a.localeCompare(b,'pt-BR')),
   }
